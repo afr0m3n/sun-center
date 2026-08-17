@@ -12,6 +12,7 @@ interface CompareViewProps {
   location: Location
   dates: string[]
   onDatesChange: (dates: string[]) => void
+  onInspectDate: (date: string) => void
   data: CompareDayData[]
   seasons: SeasonEvents
   today: string
@@ -37,7 +38,7 @@ function CompareChart({ location, data }: { location: Location; data: CompareDay
   </svg></div>
 }
 
-export function CompareView({ location, dates, onDatesChange, data, seasons, today }: CompareViewProps) {
+export function CompareView({ location, dates, onDatesChange, onInspectDate, data, seasons, today }: CompareViewProps) {
   const presets: Array<[string, string]> = [
     ['Today', today],
     ['1 month ago', DateTime.fromISO(today, { zone: location.timezone }).minus({ months: 1 }).toISODate()!],
@@ -51,7 +52,7 @@ export function CompareView({ location, dates, onDatesChange, data, seasons, tod
 
   return <div className="mode-view compare-view">
     <section className="compare-controls">
-      {dates.map((date, index) => <div className="compare-date" key={index} style={{ borderColor: colors[index] }}><span>Series {index + 1}</span><input type="date" value={date} onChange={(event) => event.target.value && update(index, event.target.value)} /><select aria-label={`Preset for series ${index + 1}`} value="" onChange={(event) => event.target.value && update(index, event.target.value)}><option value="">Choose preset…</option>{presets.map(([label, value]) => <option key={label} value={value}>{label}</option>)}</select>{dates.length > 2 && <button onClick={() => onDatesChange(dates.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>}</div>)}
+      {dates.map((date, index) => <div className="compare-date" key={index} style={{ borderColor: colors[index] }}><span>Series {index + 1}</span><input type="date" value={date} onChange={(event) => event.target.value && update(index, event.target.value)} /><button className="inspect-compare" onClick={() => onInspectDate(date)} aria-label={`Inspect ${date} in Today`}>Inspect</button><select aria-label={`Preset for series ${index + 1}`} value="" onChange={(event) => event.target.value && update(index, event.target.value)}><option value="">Choose preset…</option>{presets.map(([label, value]) => <option key={label} value={value}>{label}</option>)}</select>{dates.length > 2 && <button onClick={() => onDatesChange(dates.filter((_, itemIndex) => itemIndex !== index))}>Remove</button>}</div>)}
       {dates.length < 4 && <button className="add-date" onClick={() => onDatesChange([...dates, presets.find(([, value]) => !dates.includes(value))?.[1] ?? today])}>+ Add date</button>}
     </section>
 

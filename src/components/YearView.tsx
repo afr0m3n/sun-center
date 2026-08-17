@@ -1,20 +1,25 @@
 import { DateTime } from 'luxon'
 import { localClockSeconds } from '../astronomy/civilTime'
+import { yearDateAtIndex, yearDateIndex } from '../astronomy/explorerState'
 import { formatClock, formatDegrees, formatDuration, formatSignedDegrees, formatSignedDuration, formatSignedRate } from '../astronomy/formatting'
 import type { Location, YearSolarStatistics } from '../astronomy/types'
 import { AnnualChart, type AnnualMarker } from './AnnualChart'
+import { useStickyExplorer } from './useStickyExplorer'
 
 interface YearViewProps {
   location: Location
   selectedDate: string
   onDateChange: (date: string) => void
+  onInspectDay: (date: string) => void
   data: YearSolarStatistics
 }
 
-export function YearView({ location, selectedDate, onDateChange, data }: YearViewProps) {
+export function YearView({ location, selectedDate, onDateChange, onInspectDay, data }: YearViewProps) {
   const dates = data.days.map((day) => day.date)
-  const selectedIndex = Math.max(0, dates.indexOf(selectedDate))
+  const selectedIndex = yearDateIndex(dates, selectedDate)
   const selected = data.days[selectedIndex]
+  const { anchorRef, visible: showCompactExplorer } = useStickyExplorer()
+  const selectIndex = (index: number) => onDateChange(yearDateAtIndex(dates, index))
   const markerFor = (event: Date, label: string, color: string): AnnualMarker => ({
     index: Math.max(0, dates.indexOf(DateTime.fromJSDate(event, { zone: location.timezone }).toISODate()!)),
     label,
@@ -51,6 +56,18 @@ export function YearView({ location, selectedDate, onDateChange, data }: YearVie
         </div>
       </section>
 
+      <section ref={anchorRef} className="panel year-explorer" aria-labelledby="year-explorer-title">
+        <div className="year-explorer-readout"><div><span className="section-kicker">Calendar-date timeline</span><h2 id="year-explorer-title">Year Explorer · {data.year}</h2></div><strong>{selectedDate}</strong></div>
+        <input aria-label="Selected date in year graphs" aria-valuetext={selectedDate} type="range" min="0" max={dates.length - 1} value={selectedIndex} onChange={(event) => selectIndex(Number(event.target.value))} />
+        <div className="year-explorer-context"><span>Daylight {formatDuration(selected.dayLengthSeconds)}</span><span>Maximum {formatDegrees(selected.maximumSolarAltitudeDeg)}</span><button className="inspect-day-action" onClick={() => onInspectDay(selectedDate)}>Inspect day</button></div>
+      </section>
+
+      {showCompactExplorer && <aside className="explorer-dock compact-year-explorer" aria-label="Compact Year Explorer">
+        <div className="dock-readout"><span>{data.year}</span><strong>{selectedDate.slice(5)}</strong><span>{formatDuration(selected.dayLengthSeconds)} daylight</span></div>
+        <div className="dock-slider"><input aria-label="Compact selected date in year" aria-valuetext={selectedDate} type="range" min="0" max={dates.length - 1} value={selectedIndex} onChange={(event) => selectIndex(Number(event.target.value))} /><span>{formatDegrees(selected.maximumSolarAltitudeDeg)} maximum</span></div>
+        <button className="inspect-day-action" onClick={() => onInspectDay(selectedDate)}>Inspect day</button>
+      </aside>}
+
       <section className="panel annual-summary">
         <div className="summary-days">
           <div><span>Longest day · {data.longestDay?.date ?? 'unavailable'}</span><strong>{formatDuration(data.longestDay?.dayLengthSeconds ?? null)}</strong></div>
@@ -74,7 +91,7 @@ export function YearView({ location, selectedDate, onDateChange, data }: YearVie
 
       <section className="panel annual-panel">
         <div className="panel-heading"><div><span className="section-kicker">Photoperiod</span><h2>Daylight duration</h2></div><span className="date-caption">{selectedDate}</span></div>
-        <AnnualChart title="Yearly daylight duration" dates={dates} series={[{ label: 'Daylight', color: '#ffcf62', values: data.days.map((day) => day.dayLengthSeconds) }]} markers={markers} selectedIndex={selectedIndex} formatValue={(value) => formatDuration(value)} />
+        <AnnualChart title="Yearly daylight duration" dates={dates} series={[{ label: 'Daylight', color: '#ffcf62', values: data.days.map((day) => day.dayLengthSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => formatDuration(value)} />
       </section>
 
       <section className="panel annual-panel">
@@ -82,21 +99,21 @@ export function YearView({ location, selectedDate, onDateChange, data }: YearVie
         <AnnualChart title="Local clock sunrise and sunset with DST discontinuities" dates={dates} series={[
           { label: 'Sunrise', color: '#ffb45e', values: data.days.map((day) => day.sunrise ? localClockSeconds(day.sunrise, location.timezone) : null) },
           { label: 'Sunset', color: '#ff7b54', values: data.days.map((day) => day.sunset ? localClockSeconds(day.sunset, location.timezone) : null) },
-        ]} markers={markers} selectedIndex={selectedIndex} highlightJumps formatValue={(value) => DateTime.fromObject({ hour: Math.floor(value / 3600), minute: Math.floor((value % 3600) / 60) }).toFormat('HH:mm')} />
+        ]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} highlightJumps formatValue={(value) => DateTime.fromObject({ hour: Math.floor(value / 3600), minute: Math.floor((value % 3600) / 60) }).toFormat('HH:mm')} />
       </section>
 
       <div className="annual-pair">
         <section className="panel annual-panel">
           <div className="panel-heading"><div><span className="section-kicker">Culmination</span><h2>Maximum solar altitude</h2></div><span className="date-caption">{formatDegrees(selected.maximumSolarAltitudeDeg)}</span></div>
-          <AnnualChart title="Maximum solar altitude by date" dates={dates} series={[{ label: 'Maximum', color: '#ffe27a', values: data.days.map((day) => day.maximumSolarAltitudeDeg) }]} markers={markers} selectedIndex={selectedIndex} formatValue={(value) => `${value.toFixed(1)}°`} />
+          <AnnualChart title="Maximum solar altitude by date" dates={dates} series={[{ label: 'Maximum', color: '#ffe27a', values: data.days.map((day) => day.maximumSolarAltitudeDeg) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${value.toFixed(1)}°`} />
         </section>
         <section className="panel annual-panel">
           <div className="panel-heading"><div><span className="section-kicker">Seasonal acceleration</span><h2>Daylight tempo</h2></div><span className="date-caption">{formatSignedRate(selected.dayLengthChangeSeconds)}</span></div>
-          <AnnualChart title="Daily daylight-duration change" dates={dates} series={[{ label: 'Δ daylight', color: '#7ed9aa', values: data.days.map((day) => day.dayLengthChangeSeconds) }]} markers={markers} selectedIndex={selectedIndex} formatValue={(value) => `${Math.round(value)}s`} zeroLine />
+          <AnnualChart title="Daily daylight-duration change" dates={dates} series={[{ label: 'Δ daylight', color: '#7ed9aa', values: data.days.map((day) => day.dayLengthChangeSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${Math.round(value)}s`} zeroLine />
         </section>
       </div>
       <p className="method-note">Sunrise and sunset tooltip values are local wall-clock times in {location.timezone}. Their dashed jumps expose offset changes; tempo metrics use the absolute solar shift and therefore do not turn a DST change into a one-hour astronomical movement. Selected sunrise: {formatClock(selected.sunrise, location.timezone)}.</p>
-      <input className="year-date-scrubber" aria-label="Selected date in year graphs" type="range" min="0" max={dates.length - 1} value={selectedIndex} onChange={(event) => onDateChange(dates[Number(event.target.value)])} />
+
     </div>
   )
 }
