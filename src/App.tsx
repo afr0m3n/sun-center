@@ -9,7 +9,6 @@ import { getSolarMaximum } from './astronomy/dayStatistics'
 import { getSunEvents } from './astronomy/sunEvents'
 import { getSunPosition } from './astronomy/sunPosition'
 import { getSunRate } from './astronomy/sunRate'
-import type { Location } from './astronomy/types'
 import { getYearSolarStatistics } from './astronomy/yearStatistics'
 import { AltitudeChart } from './components/AltitudeChart'
 import { AltitudeMilestones } from './components/AltitudeMilestones'
@@ -17,9 +16,10 @@ import { CompareView } from './components/CompareView'
 import { SunPath } from './components/SunPath'
 import { TimeExplorer } from './components/TimeExplorer'
 import { YearView } from './components/YearView'
+import { LocationSelector } from './locations/LocationSelector'
+import { useLocations } from './locations/useLocations'
 import './App.css'
 
-const location: Location = { name: 'Ústí nad Labem', latitude: 50.6724, longitude: 14.0706, elevationMeters: 0, timezone: 'Europe/Prague' }
 const altitudeMilestones = [40, 30, 20, 15, 10, 5, 0]
 const compassPoints = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
 const compassDirection = (azimuth: number) => compassPoints[Math.round(azimuth / 22.5) % 16]
@@ -28,6 +28,7 @@ type ViewMode = 'today' | 'year' | 'compare'
 type TimeMode = 'live' | 'inspect'
 
 function App() {
+  const { activeLocation: location } = useLocations()
   const initialNow = DateTime.now().setZone(location.timezone)
   const initialDate = initialNow.toISODate() ?? ''
   const [now, setNow] = useState(() => new Date())
@@ -42,23 +43,33 @@ function App() {
   const localNow = DateTime.fromJSDate(now, { zone: location.timezone })
   const today = localNow.toISODate()!
   const isLive = timeMode === 'live'
-  const effectiveInstant = isLive ? now : inspectedInstant
+  const observationDate = isLive ? today : selectedDate
 
   useEffect(() => {
     if (timeMode === 'live' && selectedDate !== today) setSelectedDate(today)
   }, [timeMode, selectedDate, today])
-  const events = useMemo(() => getSunEvents(location, selectedDate), [selectedDate])
-  const timeline = useMemo(() => createCivilDayTimeline(location, selectedDate), [selectedDate])
-  const profile = useMemo(() => getDayProfile(location, selectedDate), [selectedDate])
-  const hourly = useMemo(() => getHourlySummary(location, selectedDate), [selectedDate])
-  const position = useMemo(() => getSunPosition(location, effectiveInstant), [effectiveInstant])
-  const rate = useMemo(() => getSunRate(location, effectiveInstant), [effectiveInstant])
-  const maximum = useMemo(() => getSolarMaximum(location, events.solarNoon), [events.solarNoon])
-  const selectedYear = Number(selectedDate.slice(0, 4))
-  const yearData = useMemo(() => getYearSolarStatistics(location, selectedYear), [selectedYear])
-  const selectedYearDay = yearData.days.find((day) => day.date === selectedDate) ?? yearData.days[0]
-  const crossings = useMemo(() => altitudeMilestones.map((altitude) => getAltitudeCrossings(location, selectedDate, altitude)), [selectedDate])
-  const compareData = useMemo(() => getCompareData(location, compareDates), [compareDates])
+  const events = useMemo(() => getSunEvents(location, observationDate), [location, observationDate])
+  const timeline = useMemo(() => createCivilDayTimeline(location, observationDate), [location, observationDate])
+  const clampedInspectedInstant = useMemo(() => clampCivilTimelineInspectionInstant(timeline, inspectedInstant), [timeline, inspectedInstant])
+  const effectiveInstant = isLive ? now : clampedInspectedInstant
+  const profile = useMemo(() => getDayProfile(location, observationDate), [location, observationDate])
+  const hourly = useMemo(() => getHourlySummary(location, observationDate), [location, observationDate])
+  const position = useMemo(() => getSunPosition(location, effectiveInstant), [location, effectiveInstant])
+  const rate = useMemo(() => getSunRate(location, effectiveInstant), [location, effectiveInstant])
+  const maximum = useMemo(() => getSolarMaximum(location, events.solarNoon), [location, events.solarNoon])
+  const selectedYear = Number(observationDate.slice(0, 4))
+  const yearData = useMemo(() => getYearSolarStatistics(location, selectedYear), [location, selectedYear])
+  const selectedYearDay = yearData.days.find((day) => day.date === observationDate) ?? yearData.days[0]
+  const crossings = useMemo(() => altitudeMilestones.map((altitude) => getAltitudeCrossings(location, observationDate, altitude)), [location, observationDate])
+  const compareData = useMemo(() => getCompareData(location, compareDates), [location, compareDates])
+
+  useEffect(() => {
+    if (timeMode !== 'inspect') return
+    setInspectedInstant((current) => {
+      const clamped = clampCivilTimelineInspectionInstant(timeline, current)
+      return clamped.getTime() === current.getTime() ? current : clamped
+    })
+  }, [timeline, timeMode])
 
   const selectDate = (date: string) => {
     setSelectedDate(date)
@@ -84,11 +95,11 @@ function App() {
   const eventRows: Array<[string, Date | null]> = [['Astronomical dawn', events.astronomicalDawn], ['Nautical dawn', events.nauticalDawn], ['Civil dawn', events.civilDawn], ['Sunrise', events.sunrise], ['Solar noon', events.solarNoon], ['Sunset', events.sunset], ['Civil dusk', events.civilDusk], ['Nautical dusk', events.nauticalDusk], ['Astronomical dusk', events.astronomicalDusk]]
 
   return <main className="dashboard">
-    <header className="masthead"><div><div className="eyebrow"><span className="sun-pulse"/> Solar position observatory</div><h1>SUN CENTER</h1></div><label className="date-control"><span>Observation date</span><input type="date" value={selectedDate} onChange={(event) => event.target.value && selectDate(event.target.value)}/></label></header>
+    <header className="masthead"><div><div className="eyebrow"><span className="sun-pulse"/> Solar position observatory</div><h1>SUN CENTER</h1></div><label className="date-control"><span>Observation date</span><input type="date" value={observationDate} onChange={(event) => event.target.value && selectDate(event.target.value)}/></label></header>
     <nav className="mode-nav" aria-label="Sun Center views">{(['today', 'year', 'compare'] as const).map((mode) => <button key={mode} className={view === mode ? 'active' : ''} onClick={() => setView(mode)}>{mode}</button>)}</nav>
-    <section className="location-bar"><div><span className="section-kicker">Station 01</span><strong>{location.name}</strong><span>50.6724° N, 14.0706° E · {location.elevationMeters} m</span></div><div className="local-clock"><span>Europe/Prague</span><strong>{localNow.toFormat('HH:mm:ss')}</strong><span>{localNow.toFormat('cccc, dd LLL yyyy · ZZZZ')}</span></div></section>
+    <section className="location-bar"><div className="station-details"><span className="section-kicker">Active station</span><LocationSelector/><span>{Math.abs(location.latitude).toFixed(4)}° {location.latitude >= 0 ? 'N' : 'S'}, {Math.abs(location.longitude).toFixed(4)}° {location.longitude >= 0 ? 'E' : 'W'} · {location.elevationMeters === null ? 'elevation —' : `${location.elevationMeters} m`}</span></div><div className="local-clock"><span>{location.timezone}</span><strong>{localNow.toFormat('HH:mm:ss')}</strong><span>{localNow.toFormat('cccc, dd LLL yyyy · ZZZZ')}</span></div></section>
 
-    {view === 'year' && <YearView location={location} selectedDate={selectedDate} onDateChange={selectDate} data={yearData}/>}
+    {view === 'year' && <YearView location={location} selectedDate={observationDate} onDateChange={selectDate} data={yearData}/>}
     {view === 'compare' && <CompareView location={location} dates={compareDates} onDatesChange={setCompareDates} data={compareData} seasons={yearData.seasons} today={today}/>}
     {view === 'today' && <div className="mode-view today-view">
       <TimeExplorer timeline={timeline} events={events} instant={effectiveInstant} isLive={isLive} onInspect={inspect} onNow={returnToNow}/>
@@ -97,8 +108,8 @@ function App() {
         <article className="panel statistics"><div className="panel-heading"><div><span className="section-kicker">Selected day</span><h2>Day statistics</h2></div></div><dl><div><dt>Day length</dt><dd>{formatDuration(events.dayLengthSeconds)}</dd></div><div><dt>Maximum altitude</dt><dd>{formatDegrees(maximum?.altitudeDeg ?? null)}</dd></div><div><dt>Maximum time</dt><dd>{formatClock(maximum?.timestamp ?? null, location.timezone)}</dd></div><div><dt>Civil timeline</dt><dd>{timeline.durationSeconds / 3600}h</dd></div></dl></article>
       </section>
       <section className="seasonal-readout today-seasonal"><div><span>Daylight vs yesterday</span><strong className={(selectedYearDay.dayLengthChangeSeconds ?? 0) >= 0 ? 'positive' : 'negative'}>{formatSignedDuration(selectedYearDay.dayLengthChangeSeconds)}</strong><small>{formatSignedRate(selectedYearDay.dayLengthChangeSeconds)}</small></div><div><span>Sunrise shift</span><strong>{formatSignedRate(selectedYearDay.sunriseChangeSeconds?.absoluteSolar ?? null)}</strong><small>clock {formatSignedDuration(selectedYearDay.sunriseChangeSeconds?.localClock ?? null)}</small></div><div><span>Sunset shift</span><strong>{formatSignedRate(selectedYearDay.sunsetChangeSeconds?.absoluteSolar ?? null)}</strong><small>clock {formatSignedDuration(selectedYearDay.sunsetChangeSeconds?.localClock ?? null)}</small></div><div><span>Maximum altitude</span><strong>{formatSignedDegrees(selectedYearDay.maximumAltitudeChangeDeg, 2, '°/day')}</strong></div><div><span>From summer solstice</span><strong>{formatSignedDuration(selectedYearDay.seasonalContext.daylightFromSummerSolsticeSeconds)}</strong></div><div><span>From winter solstice</span><strong>{formatSignedDuration(selectedYearDay.seasonalContext.daylightFromWinterSolsticeSeconds)}</strong></div></section>
-      <SunPath location={location} date={selectedDate} instant={effectiveInstant} onInspect={inspect}/>
-      <section className="panel chart-panel"><div className="panel-heading"><div><span className="section-kicker">Daily arc · click to inspect</span><h2>Solar altitude</h2></div><span className="date-caption">{DateTime.fromISO(selectedDate).toFormat('dd LLL yyyy')}</span></div><AltitudeChart location={location} date={selectedDate} samples={profile} events={events} instant={effectiveInstant} onInspect={inspect}/></section>
+      <SunPath location={location} date={observationDate} instant={effectiveInstant} onInspect={inspect}/>
+      <section className="panel chart-panel"><div className="panel-heading"><div><span className="section-kicker">Daily arc · click to inspect</span><h2>Solar altitude</h2></div><span className="date-caption">{DateTime.fromISO(observationDate).toFormat('dd LLL yyyy')}</span></div><AltitudeChart location={location} date={observationDate} samples={profile} events={events} instant={effectiveInstant} onInspect={inspect}/></section>
       <section className="lower-grid"><article className="panel events-panel"><div className="panel-heading"><div><span className="section-kicker">Light thresholds</span><h2>Day events</h2></div></div><div className="events-list">{eventRows.map(([label, event]) => <div key={label} className={label === 'Solar noon' ? 'solar-noon-row' : ''}><span>{label}</span><strong>{formatClock(event, location.timezone)}</strong></div>)}</div></article><AltitudeMilestones location={location} crossings={crossings} now={effectiveInstant} observationLabel={isLive ? 'Live' : 'Inspected time'} altitudeRateDegPerMinute={rate.altitudeDegPerMinute}/></section>
       <section className="panel tempo-panel hourly-panel"><div className="panel-heading"><div><span className="section-kicker">Hourly movement</span><h2>Tempo</h2></div><span className="tempo-unit">Δ altitude</span></div><div className="table-wrap"><table><thead><tr><th>Interval</th><th>Start</th><th>End</th><th>Change</th><th>Avg / hour</th></tr></thead><tbody>{tempoRows.map(({ start, end }) => { const change = end.altitudeDeg - start.altitudeDeg; const isCurrent = start.timestamp.getTime() === currentHourStart; return <tr key={start.timestamp.toISOString()} className={isCurrent ? 'current-hour' : ''}><td>{formatHourlyLabel(start)} → {formatHourlyLabel(end)}</td><td>{formatDegrees(start.altitudeDeg)}</td><td>{formatDegrees(end.altitudeDeg)}</td><td className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change.toFixed(2)}°</td><td>{change >= 0 ? '+' : ''}{change.toFixed(2)}°/h</td></tr> })}</tbody></table></div></section>
     </div>}

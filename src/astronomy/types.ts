@@ -1,8 +1,9 @@
 export interface Location {
+  id: string
   name: string
   latitude: number
   longitude: number
-  elevationMeters: number
+  elevationMeters: number | null
   timezone: string
 }
 

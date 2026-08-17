@@ -10,6 +10,7 @@ import type { Location, YearSolarStatistics } from './types'
 import { getSeasonEvents, getYearSolarStatistics } from './yearStatistics'
 
 const usti: Location = {
+  id: 'test-usti',
   name: 'Ústí nad Labem',
   latitude: 50.6724,
   longitude: 14.0706,

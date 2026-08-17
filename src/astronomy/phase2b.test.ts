@@ -2,12 +2,16 @@ import { Seasons } from 'astronomy-engine'
 import { DateTime } from 'luxon'
 import { describe, expect, it } from 'vitest'
 import { civilTimelineElapsedSeconds, civilTimelineInstant, clampCivilTimelineInspectionInstant, createCivilDayTimeline, formatCivilTimelineInstant, timelineFraction } from './civilTimeline'
+import { getCompareData } from './compareData'
+import { formatClock } from './formatting'
 import { getSunEvents } from './sunEvents'
 import { getSunPosition } from './sunPosition'
 import { createSunPath, getSeasonalPathDates, nearestPathSampleIndex, projectSkyPoint } from './sunPath'
 import type { Location } from './types'
+import { getYearSolarStatistics } from './yearStatistics'
 
-const usti: Location = { name: 'Ústí nad Labem', latitude: 50.6724, longitude: 14.0706, elevationMeters: 0, timezone: 'Europe/Prague' }
+const usti: Location = { id: 'test-usti', name: 'Ústí nad Labem', latitude: 50.6724, longitude: 14.0706, elevationMeters: 0, timezone: 'Europe/Prague' }
+const tenerife: Location = { id: 'test-tenerife', name: 'Tenerife', latitude: 28.2916, longitude: -16.6291, elevationMeters: null, timezone: 'Atlantic/Canary' }
 
 describe('real civil-day timeline', () => {
   it('uses the elapsed duration between consecutive local midnights', () => {
@@ -33,6 +37,27 @@ describe('real civil-day timeline', () => {
         expect(civilTimelineElapsedSeconds(timeline, instant)).toBeCloseTo(elapsed, 6)
       }
     }
+  })
+  it('uses the same civil-day infrastructure for Atlantic/Canary DST', () => {
+    expect(createCivilDayTimeline(tenerife, '2026-03-29').durationSeconds).toBe(23 * 3600)
+    expect(createCivilDayTimeline(tenerife, '2026-10-25').durationSeconds).toBe(25 * 3600)
+    const repeated = createCivilDayTimeline(tenerife, '2026-10-25')
+    expect(formatCivilTimelineInstant(repeated, civilTimelineInstant(repeated, 1.5 * 3600))).toBe('01:30 UTC+01:00')
+    expect(formatCivilTimelineInstant(repeated, civilTimelineInstant(repeated, 2.5 * 3600))).toBe('01:30 UTC+00:00')
+  })
+  it('disambiguates repeated event clocks outside the explorer', () => {
+    const repeated = createCivilDayTimeline(tenerife, '2026-10-25')
+    expect(formatClock(civilTimelineInstant(repeated, 1.5 * 3600), tenerife.timezone)).toBe('01:30:00 UTC+01:00')
+    expect(formatClock(civilTimelineInstant(repeated, 2.5 * 3600), tenerife.timezone)).toBe('01:30:00 UTC+00:00')
+  })
+  it('builds compare and annual data in the alternate timezone', () => {
+    const compared = getCompareData(tenerife, ['2026-03-29', '2026-10-25'])
+    expect(compared.map((day) => day.civilDayDurationSeconds)).toEqual([23 * 3600, 25 * 3600])
+    expect(compared.every((day) => day.timezone === tenerife.timezone)).toBe(true)
+    const annual = getYearSolarStatistics(tenerife, 2026)
+    expect(annual.timezone).toBe(tenerife.timezone)
+    expect(annual.days).toHaveLength(365)
+    expect(annual.days[0].maximumSolarAltitudeDeg).not.toBe(getYearSolarStatistics(usti, 2026).days[0].maximumSolarAltitudeDeg)
   })
   it('clamps inspection controls inside the selected civil date', () => {
     const timeline = createCivilDayTimeline(usti, '2026-10-25')
@@ -83,6 +108,13 @@ describe('polar sky-dome projection', () => {
     const instant = new Date('2026-08-16T09:37:12.345Z')
     const position = getSunPosition(usti, instant)
     expect(projectSkyPoint(position.altitudeDeg, position.azimuthDeg, 150, 160, 160)).toEqual(projectSkyPoint(getSunPosition(usti, instant).altitudeDeg, getSunPosition(usti, instant).azimuthDeg, 150, 160, 160))
+  })
+  it('computes an alternate station from its own coordinates', () => {
+    const instant = new Date('2026-08-16T12:00:00Z')
+    const ustiPosition = getSunPosition(usti, instant)
+    const tenerifePosition = getSunPosition(tenerife, instant)
+    expect(Math.abs(tenerifePosition.altitudeDeg - ustiPosition.altitudeDeg)).toBeGreaterThan(5)
+    expect(Math.abs(tenerifePosition.azimuthDeg - ustiPosition.azimuthDeg)).toBeGreaterThan(5)
   })
   it('handles keyboard path selection when no visible path exists', () => {
     expect(nearestPathSampleIndex([], new Date())).toBeNull()

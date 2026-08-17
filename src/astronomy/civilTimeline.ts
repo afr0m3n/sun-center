@@ -42,12 +42,7 @@ export function timelineFraction(timeline: CivilDayTimeline, instant: Date): num
 
 function isAmbiguousWallTime(timeline: CivilDayTimeline, instant: Date): boolean {
   const local = DateTime.fromJSDate(instant, { zone: timeline.timezone })
-  const signature = local.toFormat('yyyy-LL-dd HH:mm')
-  for (const deltaMinutes of [-180, -120, -90, -60, -30, 30, 60, 90, 120, 180]) {
-    const candidate = DateTime.fromMillis(instant.getTime() + deltaMinutes * 60_000, { zone: timeline.timezone })
-    if (candidate.toFormat('yyyy-LL-dd HH:mm') === signature && candidate.offset !== local.offset) return true
-  }
-  return false
+  return local.getPossibleOffsets().length > 1
 }
 
 export function formatCivilTimelineInstant(timeline: CivilDayTimeline, instant: Date, includeSeconds = false): string {
