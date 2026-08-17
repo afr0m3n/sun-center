@@ -1,0 +1,36 @@
+import { formatClock, formatDuration } from '../astronomy/formatting'
+import type { AltitudeCrossings, Location } from '../astronomy/types'
+
+interface AltitudeMilestonesProps {
+  location: Location
+  crossings: AltitudeCrossings[]
+  now: Date
+  isToday: boolean
+  altitudeRateDegPerMinute: number
+}
+
+export function AltitudeMilestones({ location, crossings, now, isToday, altitudeRateDegPerMinute }: AltitudeMilestonesProps) {
+  const future = crossings.flatMap((crossing) => [
+    crossing.rising ? { altitude: crossing.altitudeDeg, direction: 'rising', time: crossing.rising } : null,
+    crossing.descending ? { altitude: crossing.altitudeDeg, direction: 'descending', time: crossing.descending } : null,
+  ]).filter((item): item is { altitude: number; direction: string; time: Date } => Boolean(item && item.time.getTime() > now.getTime()))
+    .sort((left, right) => left.time.getTime() - right.time.getTime())
+  const next = isToday ? future[0] : null
+  const direction = Math.abs(altitudeRateDegPerMinute) < 0.001 ? 'at culmination' : altitudeRateDegPerMinute > 0 ? 'rising' : 'descending'
+
+  return (
+    <article className="panel milestones-panel">
+      <div className="panel-heading">
+        <div><span className="section-kicker">Refined apparent-altitude crossings</span><h2>Altitude milestones</h2></div>
+        <span className="tempo-unit">second-level search</span>
+      </div>
+      {isToday && <div className="milestone-live"><span>Sun is currently {direction}</span><strong>{next ? `Next: ${next.altitude}° ${next.direction} in ${formatDuration((next.time.getTime() - now.getTime()) / 1000, true)}` : 'No remaining milestone today'}</strong></div>}
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Altitude</th><th>Rising</th><th>Descending</th></tr></thead>
+          <tbody>{crossings.map((crossing) => <tr key={crossing.altitudeDeg}><td>{crossing.altitudeDeg}°</td><td>{formatClock(crossing.rising, location.timezone)}</td><td>{formatClock(crossing.descending, location.timezone)}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </article>
+  )
+}

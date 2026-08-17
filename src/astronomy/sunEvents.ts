@@ -6,16 +6,8 @@ import {
   SearchRiseSet,
   type AstroTime,
 } from 'astronomy-engine'
-import { DateTime } from 'luxon'
+import { getCivilDayBounds } from './civilTime'
 import type { Location, SunEvents } from './types'
-
-function civilDay(location: Location, date: string) {
-  const start = DateTime.fromISO(date, { zone: location.timezone }).startOf('day')
-  if (!start.isValid) {
-    throw new Error(`Invalid date or timezone: ${date} / ${location.timezone}`)
-  }
-  return { start, end: start.plus({ days: 1 }) }
-}
 
 function withinDay(event: AstroTime | null, startMs: number, endMs: number): Date | null {
   if (!event) return null
@@ -24,7 +16,7 @@ function withinDay(event: AstroTime | null, startMs: number, endMs: number): Dat
 }
 
 export function getSunEvents(location: Location, date: string): SunEvents {
-  const { start, end } = civilDay(location, date)
+  const { start, end } = getCivilDayBounds(location, date)
   const startDate = start.toJSDate()
   const startMs = start.toMillis()
   const endMs = end.toMillis()

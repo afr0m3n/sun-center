@@ -1,32 +1,94 @@
-# React + TypeScript + Vite
+# Sun Center
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Sun Center is a timezone-aware solar observatory for Ústí nad Labem. It presents apparent topocentric Sun position, daily solar events, seasonal movement, and year-scale patterns in a technical dashboard designed to keep the data visual and readable.
 
-Currently, two official plugins are available:
+## Phase 1
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The stable Phase 1 dashboard is the **Today** view. It includes:
 
-## React Compiler
+- live apparent solar altitude and azimuth
+- altitude and azimuth movement rates
+- shadow length factor and bearing
+- timezone-aware date selection and local clock
+- sunrise, solar noon, sunset, and civil/nautical/astronomical twilight
+- exact solar-maximum altitude at upper culmination
+- a five-minute apparent-altitude profile and native SVG daily arc
+- DST-aware hourly movement summaries (23, 24, or 25 real hourly samples)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Phase 2A
 
-## Expanding the Oxlint configuration
+### Year
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- one computed record for every local civil date, including leap day
+- yearly daylight, local-clock sunrise/sunset, maximum-altitude, and daylight-tempo SVG graphs
+- interactive selected-date readouts and Astronomy Engine equinox/solstice markers
+- longest and shortest day summaries
+- seasonal tempo: daylight gained/lost, solar sunrise/sunset shift, and maximum-altitude change per day
+- daylight comparisons with the calculated summer solstice, winter solstice, and previous equinox
+- explicit DST steps on the sunrise/sunset chart rather than smoothed clock times
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### Altitude milestones
+
+The Today view finds rising and descending crossings for apparent solar altitudes 40°, 30°, 20°, 15°, 10°, 5°, and 0°. A ten-minute scan brackets candidate roots, the true daily apparent-altitude maximum is independently refined and inserted into the brackets, and bisection then refines each crossing to within 0.5 seconds. Unreachable thresholds remain unavailable. For the current civil date, the dashboard also identifies the next milestone and whether the Sun is rising or descending.
+
+### Compare
+
+Compare mode supports two to four arbitrary dates plus presets for today, one month ago, both solstices, and both equinoxes. It provides:
+
+- a compact event/daylight/maximum-altitude table
+- differences relative to the primary date
+- distinct native SVG series for each selected date
+- solar-altitude overlays normalized by each date's actual elapsed civil-day duration
+- visible 23-hour, 24-hour, and 25-hour day durations
+
+## Astronomy and time handling
+
+Astronomical calculations use [Astronomy Engine](https://github.com/cosinekitty/astronomy) 2.1.x. Apparent Sun position is calculated from topocentric equatorial coordinates and transformed to horizontal coordinates with Astronomy Engine's normal atmospheric-refraction model. Sunrise and sunset use its dedicated limb/refraction-aware rise/set search. Twilight uses conventional solar-center altitudes, solar noon uses upper meridian transit, and seasonal events use `Seasons(year)`; calendar dates are not hardcoded.
+
+Civil dates and IANA timezone conversion use Luxon with `Europe/Prague`. A civil day is constructed from local midnight to the next local midnight and can therefore contain 23, 24, or 25 elapsed hours.
+
+Yearly sunrise and sunset changes intentionally expose two semantics:
+
+- **local-clock change** — the difference between displayed wall-clock times, including a DST offset jump
+- **absolute solar change** — the UTC interval between consecutive events minus 24 hours, which describes the day-to-day astronomical shift without mislabeling DST as a one-hour solar movement
+
+Daylight-duration and maximum-altitude changes are direct physical differences and do not need a DST correction.
+
+The existing numerical regression fixtures are generated from the installed Astronomy Engine version. Sun Center does not claim independent astronomical validation.
+
+## Technology
+
+- React 19 and TypeScript
+- Vite 8
+- Astronomy Engine
+- Luxon
+- native responsive SVG (no charting framework)
+- Vitest and Oxlint
+
+## Development
+
+Install dependencies:
+
+```sh
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Start the development server:
+
+```sh
+npm run dev
+```
+
+Run validation:
+
+```sh
+npm test -- --run
+npm run lint
+npm run build
+```
+
+Preview the production build:
+
+```sh
+npm run preview
+```
