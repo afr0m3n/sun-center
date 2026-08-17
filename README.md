@@ -41,6 +41,22 @@ Compare mode supports two to four arbitrary dates plus presets for today, one mo
 - solar-altitude overlays normalized by each date's actual elapsed civil-day duration
 - visible 23-hour, 24-hour, and 25-hour day durations
 
+## Phase 2B
+
+### Time Explorer
+
+The Today view has one observation-time source of truth: a selected civil date, a `LIVE`/`INSPECT` mode, and an effective instant. Today opens in live mode and updates from the real clock. Dragging the time scrubber, stepping time, or selecting either visualization enters inspect mode; **NOW** returns to today's local date and resumes live updates. A newly selected non-today date opens at its calculated solar noon when available. Altitude, azimuth, movement rates, direction, shadows, altitude milestones, and both visualization markers all derive from the same effective instant.
+
+The scrubber is an elapsed-instant timeline from local midnight to the next local midnight. It is not an `HH:mm` value and does not assume 86,400 seconds. Europe/Prague spring and autumn transition dates therefore have 23-hour and 25-hour tracks. The repeated autumn hour occupies two separate positions and displays its UTC offset when needed. Dawn, sunrise, solar noon, sunset, and dusk markers are positioned by their absolute instants.
+
+### Sun Path
+
+The interactive native-SVG Sun Path uses a conventional polar sky-dome projection: horizon at the outer circle, zenith at the center, north at top, and east at right. Radial distance is linear in zenith angle (`90° − altitude`) and angular position follows Astronomy Engine's compass azimuth. The selected date path can be clicked or keyboard-stepped to inspect its exact sampled instant; hover reports local time, altitude, and azimuth. Calculated sunrise, solar noon, and sunset are marked.
+
+Selected, summer-solstice, and winter-solstice paths can be toggled independently. Solstice dates come from Astronomy Engine `Seasons()`, not fixed calendar dates, and reference paths are visually subordinate. The path geometry is memoized by date/year, so live clock ticks move only the current marker.
+
+The dome represents only the visible hemisphere. When the selected Sun is below the horizon, Sun Center does not place it falsely inside the dome: a dashed horizon-edge indicator preserves its azimuth while the telemetry and path status report its exact negative altitude.
+
 ## Astronomy and time handling
 
 Astronomical calculations use [Astronomy Engine](https://github.com/cosinekitty/astronomy) 2.1.x. Apparent Sun position is calculated from topocentric equatorial coordinates and transformed to horizontal coordinates with Astronomy Engine's normal atmospheric-refraction model. Sunrise and sunset use its dedicated limb/refraction-aware rise/set search. Twilight uses conventional solar-center altitudes, solar noon uses upper meridian transit, and seasonal events use `Seasons(year)`; calendar dates are not hardcoded.
