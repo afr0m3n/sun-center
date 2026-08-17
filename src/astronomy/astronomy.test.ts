@@ -8,6 +8,7 @@ import { getSunPosition } from './sunPosition'
 import type { Location } from './types'
 
 const usti: Location = {
+  id: 'test-usti',
   name: 'Ústí nad Labem',
   latitude: 50.6724,
   longitude: 14.0706,

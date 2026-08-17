@@ -1,7 +1,10 @@
 import { DateTime } from 'luxon'
 
 export function formatClock(event: Date | null, timezone: string): string {
-  return event ? DateTime.fromJSDate(event, { zone: timezone }).toFormat('HH:mm:ss') : '—'
+  if (!event) return '—'
+  const local = DateTime.fromJSDate(event, { zone: timezone })
+  const clock = local.toFormat('HH:mm:ss')
+  return local.getPossibleOffsets().length > 1 ? `${clock} UTC${local.toFormat('ZZ')}` : clock
 }
 
 export function formatDuration(seconds: number | null, includeSeconds = false): string {

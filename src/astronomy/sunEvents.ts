@@ -24,7 +24,7 @@ export function getSunEvents(location: Location, date: string): SunEvents {
   const observer = new Observer(
     location.latitude,
     location.longitude,
-    location.elevationMeters,
+    location.elevationMeters ?? 0,
   )
   const altitudeEvent = (direction: 1 | -1, altitude: number) =>
     withinDay(

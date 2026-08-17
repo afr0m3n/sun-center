@@ -11,7 +11,7 @@ export function getSunPosition(location: Location, instant: Date): SunPosition {
   const observer = new Observer(
     location.latitude,
     location.longitude,
-    location.elevationMeters,
+    location.elevationMeters ?? 0,
   )
   const equatorial = Equator(Body.Sun, instant, observer, true, true)
   const horizontal = Horizon(
