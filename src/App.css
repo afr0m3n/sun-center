@@ -135,6 +135,7 @@ footer { padding-top: 26px; text-align: center; font-size: .58rem; }
 .annual-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .annual-chart-wrap { overflow-x: auto; position: relative; }
 .annual-chart { display: block; width: 100%; min-width: 650px; touch-action: pan-y; }
+.annual-chart:focus-visible { outline: 2px solid #ffcf62; outline-offset: -3px; }
 .annual-line { fill: none; stroke-width: 2.25; vector-effect: non-scaling-stroke; }
 .annual-zero-line { stroke: #727c87; stroke-width: 1.4; }
 .season-marker { stroke-width: 1; stroke-dasharray: 3 5; opacity: .65; }
@@ -148,13 +149,21 @@ footer { padding-top: 26px; text-align: center; font-size: .58rem; }
 .chart-legend i, .series-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .chart-note { color: #7e8893; font: .65rem 'DM Mono', monospace; }
 .method-note { margin: 12px 4px 0; color: #707b86; font: .68rem/1.55 'DM Mono', monospace; }
-.year-date-scrubber { width: 100%; margin-top: 16px; accent-color: #ffcf62; }
+.year-explorer { display: grid; gap: 16px; margin-bottom: 14px; padding: 20px clamp(20px, 3vw, 32px); }
+.year-explorer-readout, .year-explorer-context { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.year-explorer-readout > strong { color: #fff0b0; font: 500 clamp(1.2rem, 2.5vw, 1.8rem) 'DM Mono', monospace; }
+.year-explorer input[type='range'], .dock-slider input[type='range'] { width: 100%; min-height: 28px; margin: 0; accent-color: #ffcf62; cursor: ew-resize; }
+.year-explorer input[type='range']:focus-visible, .dock-slider input[type='range']:focus-visible { outline: 2px solid #ffcf62; outline-offset: 3px; border-radius: 3px; }
+.year-explorer-context { color: #89939e; font: .68rem 'DM Mono', monospace; }
+.inspect-day-action { min-height: 42px; padding: 8px 14px; color: #17130a; background: #ffcf62; border: 1px solid #ffcf62; border-radius: 3px; font: 700 .66rem 'DM Mono', monospace; letter-spacing: .05em; cursor: pointer; }
 .compare-controls { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 10px; padding: 20px 0 6px; }
 .compare-date { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 13px; background: #10151b; border: 1px solid; border-radius: 4px; }
 .compare-date span { grid-column: 1 / -1; color: #89939e; font: .65rem 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
 .compare-date input, .compare-date select { min-width: 0; color-scheme: dark; color: #e9edf2; background: #0b0f14; border: 1px solid #343b45; border-radius: 3px; padding: 8px; font: .7rem 'DM Mono', monospace; }
 .compare-date select { grid-column: 1 / -1; }
 .compare-date button, .add-date { color: #9ca6b1; background: transparent; border: 1px solid #343b45; border-radius: 3px; font: .65rem 'DM Mono', monospace; cursor: pointer; }
+.compare-date button { min-height: 38px; }
+.compare-date .inspect-compare { color: #ffda7a; border-color: #66552c; }
 .add-date { min-height: 96px; }
 .compare-panel { margin-top: 8px; }
 .compare-chart { display: block; width: 100%; min-width: 720px; }
@@ -192,6 +201,19 @@ footer { padding-top: 26px; text-align: center; font-size: .58rem; }
 .time-step-controls button:hover, .time-step-controls button:focus-visible { color: #fff; border-color: #69737e; }
 .time-step-controls .now-control { color: #17130a; background: #ffcf62; border-color: #ffcf62; font-weight: 700; letter-spacing: .1em; }
 .inspection-datetime { display: block; margin-top: 7px; }
+.explorer-dock { position: fixed; z-index: 15; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; display: grid; grid-template-columns: minmax(190px, auto) minmax(240px, 1fr) auto; align-items: center; gap: 18px; width: min(1360px, calc(100vw - 24px)); min-height: 68px; padding: 10px 14px; transform: translateX(-50%); color: #dce1e6; background: linear-gradient(100deg, rgba(13,18,24,.98), rgba(25,23,16,.98)); border: 1px solid #51462d; border-top-color: #79683b; border-radius: 4px; box-shadow: 0 14px 42px rgba(0,0,0,.55); animation: dock-in .16s ease-out; }
+@keyframes dock-in { from { opacity: 0; transform: translate(-50%, -8px); } }
+.dock-readout { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 3px 10px; min-width: 0; }
+.dock-readout strong { color: #fff0b0; font: 500 1rem 'DM Mono', monospace; white-space: nowrap; }
+.dock-readout > span:last-child { grid-column: 1 / -1; overflow: hidden; color: #7f8995; font: .6rem 'DM Mono', monospace; text-overflow: ellipsis; white-space: nowrap; }
+.dock-mode { color: #ffcf62; font: 700 .58rem 'DM Mono', monospace; letter-spacing: .1em; }
+.dock-mode.live { color: #7ed9aa; }
+.dock-slider { display: grid; gap: 1px; min-width: 0; }
+.dock-slider > span { color: #687480; font: .55rem 'DM Mono', monospace; text-align: right; }
+.dock-actions { display: flex; gap: 5px; }
+.dock-actions button { min-width: 48px; min-height: 42px; padding: 7px; color: #aab3bd; background: #11171e; border: 1px solid #343c46; border-radius: 3px; font: .62rem 'DM Mono', monospace; cursor: pointer; }
+.dock-actions .dock-now { color: #17130a; background: #ffcf62; border-color: #ffcf62; font-weight: 700; }
+.compact-year-explorer > .inspect-day-action { white-space: nowrap; }
 .sun-path-panel { margin-top: 14px; padding: clamp(20px, 3vw, 32px); }
 .sun-path-panel .panel-heading { margin-bottom: 4px; }
 .path-layout { display: grid; grid-template-columns: minmax(340px, 1.4fr) minmax(220px, .6fr); align-items: center; gap: clamp(16px, 4vw, 48px); }
@@ -226,10 +248,18 @@ footer { padding-top: 26px; text-align: center; font-size: .58rem; }
   .path-layout { grid-template-columns: 1fr; }
   .path-controls { grid-template-columns: 1fr 1fr; }
   .path-controls .section-kicker, .path-controls p { grid-column: 1 / -1; }
+  .explorer-dock { grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 6px 12px; width: calc(100vw - 12px); padding: 8px 10px; }
+  .dock-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .dock-actions button { flex: 1; min-height: 38px; }
+  .compact-year-explorer > .inspect-day-action { grid-column: 1 / -1; min-height: 38px; }
+  .year-explorer-readout, .year-explorer-context { align-items: flex-start; flex-direction: column; }
+  .year-explorer-context .inspect-day-action { width: 100%; }
 }
 @media (max-width: 430px) {
   .path-controls { grid-template-columns: 1fr; }
   .path-controls .section-kicker, .path-controls p { grid-column: auto; }
   .sun-path { width: calc(100% + 10px); margin-left: -5px; }
   .explorer-time { justify-content: flex-start; }
+  .dock-readout > span:last-child, .dock-slider > span { font-size: .52rem; }
 }
+@media (prefers-reduced-motion: reduce) { .mode-view, .explorer-dock { animation: none; } }

@@ -1,4 +1,4 @@
-import { useState, type PointerEvent } from 'react'
+import { useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
 
 export interface AnnualSeries {
   label: string
@@ -18,6 +18,7 @@ interface AnnualChartProps {
   series: AnnualSeries[]
   markers: AnnualMarker[]
   selectedIndex: number
+  onSelectedIndexChange: (index: number) => void
   formatValue: (value: number) => string
   zeroLine?: boolean
   highlightJumps?: boolean
@@ -33,6 +34,7 @@ export function AnnualChart({
   series,
   markers,
   selectedIndex,
+  onSelectedIndexChange,
   formatValue,
   zeroLine = false,
   highlightJumps = false,
@@ -60,16 +62,30 @@ export function AnnualChart({
     const viewX = ((event.clientX - bounds.left) / bounds.width) * width
     setHoveredIndex(Math.max(0, Math.min(dates.length - 1, Math.round(((viewX - padding.left) / plotWidth) * (dates.length - 1)))))
   }
+  const indexFromClick = (event: MouseEvent<SVGSVGElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const viewX = ((event.clientX - bounds.left) / bounds.width) * width
+    return Math.max(0, Math.min(dates.length - 1, Math.round(((viewX - padding.left) / plotWidth) * (dates.length - 1))))
+  }
+  const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? dates.length - 1 : selectedIndex + (event.key === 'ArrowLeft' ? -1 : 1)
+    onSelectedIndexChange(Math.max(0, Math.min(dates.length - 1, index)))
+  }
 
   return (
     <div className="annual-chart-wrap">
       <svg
         className="annual-chart"
         viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={title}
+        role="button"
+        aria-label={`${title}; click or use arrow keys to select a date`}
+        tabIndex={0}
         onPointerMove={onPointerMove}
         onPointerLeave={() => setHoveredIndex(null)}
+        onClick={(event) => onSelectedIndexChange(indexFromClick(event))}
+        onKeyDown={onKeyDown}
       >
         <title>{title}</title>
         {ticks.map((tick) => (

@@ -30,6 +30,20 @@ export function civilTimelineElapsedSeconds(timeline: CivilDayTimeline, instant:
   return Math.min(timeline.durationSeconds, Math.max(0, (instant.getTime() - timeline.start.getTime()) / 1000))
 }
 
+export interface CivilTimelineRangeState {
+  min: number
+  max: number
+  value: number
+}
+
+export function getCivilTimelineRangeState(timeline: CivilDayTimeline, instant: Date): CivilTimelineRangeState {
+  return {
+    min: 0,
+    max: Math.max(0, timeline.durationSeconds - 1),
+    value: Math.min(Math.round(civilTimelineElapsedSeconds(timeline, instant)), timeline.durationSeconds - 1),
+  }
+}
+
 export function clampCivilTimelineInspectionInstant(timeline: CivilDayTimeline, instant: Date): Date {
   const minimum = timeline.start.getTime()
   const maximum = timeline.end.getTime() - 1_000
