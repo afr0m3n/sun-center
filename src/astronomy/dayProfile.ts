@@ -1,15 +1,8 @@
 import { DateTime } from 'luxon'
+import { getCivilDayBounds } from './civilTime'
 import { getSunPosition } from './sunPosition'
 import { getSunRate } from './sunRate'
 import type { DaySample, HourlySummary, Location } from './types'
-
-function getCivilDayBounds(location: Location, date: string) {
-  const start = DateTime.fromISO(date, { zone: location.timezone }).startOf('day')
-  if (!start.isValid) {
-    throw new Error(`Invalid date or timezone: ${date} / ${location.timezone}`)
-  }
-  return { start, end: start.plus({ days: 1 }) }
-}
 
 export function getDayProfile(
   location: Location,
