@@ -1,5 +1,5 @@
-import { useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
-import { useChartViewWidth } from './useCompactChartLayout'
+import { useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useChartViewWidth, yearIndexFromPlotX } from './useCompactChartLayout'
 
 export interface AnnualSeries {
   label: string
@@ -37,6 +37,7 @@ export function AnnualChart({
   highlightJumps = false,
 }: AnnualChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [dragPointer, setDragPointer] = useState<number | null>(null)
   const width = useChartViewWidth()
   const restrained = width < 600
   const height = Math.round(260 + ((width - 400) / 600) * 40)
@@ -60,16 +61,28 @@ export function AnnualChart({
   const y = (value: number) => padding.top + ((maximum - value) / (maximum - minimum)) * plotHeight
   const tickCount = restrained ? 3 : 5
   const ticks = Array.from({ length: tickCount }, (_, index) => minimum + ((maximum - minimum) * index) / (tickCount - 1))
-  const activeIndex = hoveredIndex ?? selectedIndex
-  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const viewX = ((event.clientX - bounds.left) / bounds.width) * width
-    setHoveredIndex(Math.max(0, Math.min(dates.length - 1, Math.round(((viewX - padding.left) / plotWidth) * (dates.length - 1)))))
+  const activeIndex = dragPointer === null ? (hoveredIndex ?? selectedIndex) : selectedIndex
+  const indexFromPointer = (event: PointerEvent<SVGSVGElement>) => {
+    const point = event.currentTarget.createSVGPoint(); point.x = event.clientX; point.y = event.clientY
+    const matrix = event.currentTarget.getScreenCTM()?.inverse()
+    if (!matrix) return selectedIndex
+    return yearIndexFromPlotX(point.matrixTransform(matrix).x, padding.left, plotWidth, dates.length)
   }
-  const indexFromClick = (event: MouseEvent<SVGSVGElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const viewX = ((event.clientX - bounds.left) / bounds.width) * width
-    return Math.max(0, Math.min(dates.length - 1, Math.round(((viewX - padding.left) / plotWidth) * (dates.length - 1))))
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const index = indexFromPointer(event)
+    setHoveredIndex(index)
+    if (dragPointer === event.pointerId) onSelectedIndexChange(index)
+  }
+  const startDrag = (event: PointerEvent<SVGSVGElement>) => {
+    if (dragPointer !== null) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragPointer(event.pointerId)
+    onSelectedIndexChange(indexFromPointer(event))
+  }
+  const endDrag = (event: PointerEvent<SVGSVGElement>) => {
+    if (dragPointer !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    setDragPointer(null)
   }
   const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -84,11 +97,14 @@ export function AnnualChart({
         className="annual-chart"
         viewBox={`0 0 ${width} ${height}`}
         role="button"
-        aria-label={`${title}; click or use arrow keys to select a date`}
+        aria-label={`${title}; click, drag, or use arrow keys to select a date`}
         tabIndex={0}
+        onPointerDown={startDrag}
         onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onLostPointerCapture={() => setDragPointer(null)}
         onPointerLeave={() => setHoveredIndex(null)}
-        onClick={(event) => onSelectedIndexChange(indexFromClick(event))}
         onKeyDown={onKeyDown}
       >
         <title>{title}</title>

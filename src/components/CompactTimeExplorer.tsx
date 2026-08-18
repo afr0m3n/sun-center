@@ -14,7 +14,7 @@ export function CompactTimeExplorer({ timeline, instant, isLive, onInspect, onNo
   const inspectElapsed = (seconds: number) => onInspect(civilTimelineInstant(timeline, seconds))
   const step = (seconds: number) => inspectElapsed(range.value + seconds)
 
-  return <aside className="explorer-dock compact-time-explorer" aria-label="Compact Time Explorer">
+  return <div className="compact-dock-row compact-time-explorer" aria-label="Compact Time Explorer">
     <div className="dock-readout">
       <span className={`dock-mode ${isLive ? 'live' : 'inspect'}`} role="status" aria-live="polite">{isLive ? 'LIVE' : 'INSPECT'}</span>
       <strong>{formatCivilTimelineInstant(timeline, instant, true)}</strong>
@@ -38,5 +38,5 @@ export function CompactTimeExplorer({ timeline, instant, isLive, onInspect, onNo
       <button className="dock-now" onClick={onNow}>NOW</button>
       <button onClick={() => step(600)} aria-label="Inspect ten minutes later">+10m</button>
     </div>
-  </aside>
+  </div>
 }
