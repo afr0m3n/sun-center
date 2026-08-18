@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { DateTime } from 'luxon'
 import { getAltitudeCrossings } from './astronomy/altitudeCrossings'
 import { clampCivilTimelineInspectionInstant, createCivilDayTimeline } from './astronomy/civilTimeline'
 import { getCompareData } from './astronomy/compareData'
 import { getDayProfile, getHourlySummary } from './astronomy/dayProfile'
-import { createInspectDayTransition } from './astronomy/explorerState'
+import { createInspectDayTransition, createWallClockScrubSession, preserveWallClockInScrubSession, type WallClockScrubSession } from './astronomy/explorerState'
 import { formatClock, formatDegrees, formatDuration, formatSignedDegrees, formatSignedDuration, formatSignedRate } from './astronomy/formatting'
 import { getSolarMaximum } from './astronomy/dayStatistics'
 import { getSunEvents } from './astronomy/sunEvents'
@@ -14,9 +14,11 @@ import { getYearSolarStatistics } from './astronomy/yearStatistics'
 import { AltitudeChart } from './components/AltitudeChart'
 import { AltitudeMilestones } from './components/AltitudeMilestones'
 import { CompareView } from './components/CompareView'
+import { CompactTodayYearPosition } from './components/CompactTodayYearPosition'
 import { CompactTimeExplorer } from './components/CompactTimeExplorer'
 import { SunPath } from './components/SunPath'
 import { TimeExplorer } from './components/TimeExplorer'
+import { TodayYearScrubber } from './components/TodayYearScrubber'
 import { useStickyExplorer } from './components/useStickyExplorer'
 import { YearView } from './components/YearView'
 import { LocationSelector } from './locations/LocationSelector'
@@ -43,8 +45,11 @@ function App() {
   const [view, setView] = useState<ViewMode>('today')
   const [compareDates, setCompareDates] = useState([initialDate, initialNow.minus({ months: 1 }).toISODate() ?? initialDate])
   const { anchorRef: todayExplorerAnchorRef, visible: showCompactTodayExplorer } = useStickyExplorer()
+  const { anchorRef: todayYearAnchorRef, visible: showCompactTodayYearPosition } = useStickyExplorer()
+  const yearScrubSessionRef = useRef<WallClockScrubSession | null>(null)
 
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 1_000); return () => window.clearInterval(timer) }, [])
+  useEffect(() => { yearScrubSessionRef.current = null }, [location.id, view])
 
   const localNow = DateTime.fromJSDate(now, { zone: location.timezone })
   const today = localNow.toISODate()!
@@ -92,6 +97,16 @@ function App() {
     }
   }
   const inspect = (instant: Date) => { setInspectedInstant(clampCivilTimelineInspectionInstant(timeline, instant)); setTimeMode('inspect') }
+  const beginYearScrub = () => {
+    if (!yearScrubSessionRef.current) yearScrubSessionRef.current = createWallClockScrubSession(effectiveInstant)
+  }
+  const endYearScrub = () => { yearScrubSessionRef.current = null }
+  const inspectDatePreservingWallClock = (date: string) => {
+    const session = yearScrubSessionRef.current ?? createWallClockScrubSession(effectiveInstant)
+    setTodaySelectedDate(date)
+    setInspectedInstant(preserveWallClockInScrubSession(location, session, date))
+    setTimeMode('inspect')
+  }
   const returnToNow = () => { const current = new Date(); setNow(current); setTodaySelectedDate(DateTime.fromJSDate(current, { zone: location.timezone }).toISODate()!); setInspectedInstant(current); setTimeMode('live') }
   const inspectDay = (date: string) => {
     const transition = createInspectDayTransition(location, date, getSunEvents(location, date).solarNoon)
@@ -120,7 +135,11 @@ function App() {
     {view === 'compare' && <CompareView location={location} dates={compareDates} onDatesChange={setCompareDates} onInspectDate={inspectDay} data={compareData} seasons={todayYearData.seasons} today={today}/>}
     {view === 'today' && <div className="mode-view today-view">
       <div ref={todayExplorerAnchorRef}><TimeExplorer timeline={timeline} events={events} instant={effectiveInstant} isLive={isLive} onInspect={inspect} onNow={returnToNow}/></div>
-      {showCompactTodayExplorer && <CompactTimeExplorer timeline={timeline} instant={effectiveInstant} isLive={isLive} onInspect={inspect} onNow={returnToNow}/>}
+      <div ref={todayYearAnchorRef}><TodayYearScrubber location={location} selectedDate={observationDate} currentDate={today} data={todayYearData} onDateChange={inspectDatePreservingWallClock} onScrubStart={beginYearScrub} onScrubEnd={endYearScrub}/></div>
+      {(showCompactTodayExplorer || showCompactTodayYearPosition) && <aside className="explorer-dock today-observatory-dock" aria-label="Compact TODAY observatory controls">
+        {showCompactTodayExplorer && <CompactTimeExplorer timeline={timeline} instant={effectiveInstant} isLive={isLive} onInspect={inspect} onNow={returnToNow}/>}
+        {showCompactTodayYearPosition && <CompactTodayYearPosition selectedDate={observationDate} data={todayYearData} onDateChange={inspectDatePreservingWallClock} onScrubStart={beginYearScrub} onScrubEnd={endYearScrub}/>}
+      </aside>}
       <div className="wide-observatory">
         <div className="observatory-telemetry">
           <section className="current-grid">
@@ -131,8 +150,8 @@ function App() {
         </div>
         <SunPath location={location} date={observationDate} instant={effectiveInstant} onInspect={inspect}/>
       </div>
-      <section className="panel chart-panel"><div className="panel-heading"><div><span className="section-kicker">Daily arc · click to inspect</span><h2>Solar altitude</h2></div><span className="date-caption">{DateTime.fromISO(observationDate).toFormat('dd LLL yyyy')}</span></div><AltitudeChart location={location} date={observationDate} samples={profile} events={events} instant={effectiveInstant} onInspect={inspect}/></section>
-      <section className="lower-grid"><article className="panel events-panel"><div className="panel-heading"><div><span className="section-kicker">Light thresholds</span><h2>Day events</h2></div></div><div className="events-list">{eventRows.map(([label, event]) => <div key={label} className={label === 'Solar noon' ? 'solar-noon-row' : ''}><span>{label}</span><strong>{formatClock(event, location.timezone)}</strong></div>)}</div></article><AltitudeMilestones location={location} crossings={crossings} now={effectiveInstant} observationLabel={isLive ? 'Live' : 'Inspected time'} altitudeRateDegPerMinute={rate.altitudeDegPerMinute}/></section>
+      <section className="panel chart-panel"><div className="panel-heading"><div><span className="section-kicker">Daily arc · drag to inspect</span><h2>Solar altitude</h2></div><span className="date-caption">{DateTime.fromISO(observationDate).toFormat('dd LLL yyyy')}</span></div><AltitudeChart location={location} date={observationDate} samples={profile} events={events} instant={effectiveInstant} onInspect={inspect}/></section>
+      <section className="lower-grid"><article className="panel events-panel"><div className="panel-heading"><div><span className="section-kicker">Light thresholds</span><h2>Day events</h2></div></div><div className="events-list">{eventRows.map(([label, event]) => { const selected = Boolean(event && Math.abs(event.getTime() - effectiveInstant.getTime()) <= 1_000); return <div key={label} className={label === 'Solar noon' ? 'solar-noon-row' : ''}><span>{label}</span>{event ? <button className={`data-target ${selected ? 'selected' : ''}`} aria-pressed={selected} aria-label={`Inspect ${label} at ${formatClock(event, location.timezone)}`} onClick={() => inspect(event)}>{formatClock(event, location.timezone)}</button> : <strong>—</strong>}</div> })}</div></article><AltitudeMilestones location={location} crossings={crossings} now={effectiveInstant} observationLabel={isLive ? 'Live' : 'Inspected time'} altitudeRateDegPerMinute={rate.altitudeDegPerMinute} onInspect={inspect}/></section>
       <section className="panel tempo-panel hourly-panel"><div className="panel-heading"><div><span className="section-kicker">Hourly movement</span><h2>Tempo</h2></div><span className="tempo-unit">Δ altitude</span></div><div className="table-wrap"><table><thead><tr><th>Interval</th><th>Start</th><th>End</th><th>Change</th><th>Avg / hour</th></tr></thead><tbody>{tempoRows.map(({ start, end }) => { const change = end.altitudeDeg - start.altitudeDeg; const isCurrent = start.timestamp.getTime() === currentHourStart; return <tr key={start.timestamp.toISOString()} className={isCurrent ? 'current-hour' : ''}><td>{formatHourlyLabel(start)} → {formatHourlyLabel(end)}</td><td>{formatDegrees(start.altitudeDeg)}</td><td>{formatDegrees(end.altitudeDeg)}</td><td className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change.toFixed(2)}°</td><td>{change >= 0 ? '+' : ''}{change.toFixed(2)}°/h</td></tr> })}</tbody></table></div></section>
     </div>}
     <footer>Calculations: Astronomy Engine · Apparent topocentric coordinates · IANA timezone aware</footer>

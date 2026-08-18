@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon'
 import { describe, expect, it } from 'vitest'
 import { createCivilDayTimeline, getCivilTimelineRangeState } from './civilTimeline'
-import { createInspectDayTransition, inspectionInstantForDay, yearDateAtIndex, yearDateIndex } from './explorerState'
+import { createInspectDayTransition, createWallClockScrubSession, inspectionInstantForDay, preserveWallClockInScrubSession, preserveWallClockOnDate, yearDateAtIndex, yearDateIndex } from './explorerState'
 import type { Location } from './types'
 
 const prague: Location = {
@@ -82,5 +82,53 @@ describe('explicit inspect-day transitions', () => {
     expect(inspectionInstantForDay(timeline, new Date('2026-10-26T12:00:00Z'))).toEqual(
       new Date((timeline.start.getTime() + timeline.end.getTime()) / 2),
     )
+  })
+})
+
+describe('wall-clock preserving TODAY date changes', () => {
+  const local = (value: string) => DateTime.fromISO(value, { setZone: true }).toJSDate()
+  const inPrague = (instant: Date) => DateTime.fromJSDate(instant, { zone: prague.timezone })
+
+  it('preserves hour, minute, second, and millisecond on a normal target day', () => {
+    const result = preserveWallClockOnDate(prague, local('2026-08-18T15:30:12.345+02:00'), '2026-01-18')
+    expect(inPrague(result).toFormat('yyyy-LL-dd HH:mm:ss.SSS ZZ')).toBe('2026-01-18 15:30:12.345 +01:00')
+  })
+
+  it('clamps a nonexistent spring time to the first instant after the gap', () => {
+    const result = preserveWallClockOnDate(prague, local('2026-03-28T02:30:12.345+01:00'), '2026-03-29')
+    expect(inPrague(result).toFormat('yyyy-LL-dd HH:mm:ss.SSS ZZ')).toBe('2026-03-29 03:00:00.000 +02:00')
+  })
+
+  it('recovers the original wall-clock intent after a spring-gap date in one scrub session', () => {
+    const session = createWallClockScrubSession(local('2026-03-28T02:30:00.000+01:00'))
+
+    const gapDate = preserveWallClockInScrubSession(prague, session, '2026-03-29')
+    const nextDate = preserveWallClockInScrubSession(prague, session, '2026-03-30')
+
+    expect(inPrague(gapDate).toFormat('yyyy-LL-dd HH:mm ZZ')).toBe('2026-03-29 03:00 +02:00')
+    expect(inPrague(nextDate).toFormat('yyyy-LL-dd HH:mm ZZ')).toBe('2026-03-30 02:30 +02:00')
+  })
+
+  it('selects the repeated autumn occurrence matching the source summer offset', () => {
+    const result = preserveWallClockOnDate(prague, local('2026-08-18T02:30:00.000+02:00'), '2026-10-25')
+    expect(result.toISOString()).toBe('2026-10-25T00:30:00.000Z')
+  })
+
+  it('selects the repeated autumn occurrence matching the source winter offset', () => {
+    const result = preserveWallClockOnDate(prague, local('2026-01-18T02:30:00.000+01:00'), '2026-10-25')
+    expect(result.toISOString()).toBe('2026-10-25T01:30:00.000Z')
+  })
+
+  it('chooses the earlier repeated occurrence when no source offset matches', () => {
+    const result = preserveWallClockOnDate(prague, local('2026-01-18T02:30:00.000Z'), '2026-10-25', 'UTC')
+    expect(result.toISOString()).toBe('2026-10-25T00:30:00.000Z')
+  })
+
+  it.each(['2028-02-29', '2028-12-31'])('keeps the result inside leap-year target date %s', (target) => {
+    const result = preserveWallClockOnDate(prague, local('2026-08-18T23:59:59.999+02:00'), target)
+    expect(inPrague(result).toISODate()).toBe(target)
+    const timeline = createCivilDayTimeline(prague, target)
+    expect(result.getTime()).toBeGreaterThanOrEqual(timeline.start.getTime())
+    expect(result.getTime()).toBeLessThan(timeline.end.getTime())
   })
 })

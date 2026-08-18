@@ -37,6 +37,7 @@ export function YearView({ location, selectedDate, onDateChange, onInspectDay, d
     ['Autumn equinox', data.seasons.autumnEquinox],
     ['Winter solstice', data.seasons.winterSolstice],
   ]
+  const seasonDate = (event: Date) => DateTime.fromJSDate(event, { zone: location.timezone }).toISODate()!
   const daylightDirection = (selected.dayLengthChangeSeconds ?? 0) >= 0 ? 'lengthening' : 'shortening'
   const sunsetDirection = (selected.sunsetChangeSeconds?.absoluteSolar ?? 0) >= 0 ? 'later' : 'earlier'
   const annualDaylightRange = data.longestDay?.dayLengthSeconds !== null
@@ -75,7 +76,7 @@ export function YearView({ location, selectedDate, onDateChange, onInspectDay, d
           <div><span>Annual daylight range</span><strong>{formatSignedDuration(annualDaylightRange)}</strong></div>
         </div>
         <div className="season-grid">
-          {seasonRows.map(([label, event]) => <div key={label}><span>{label}</span><strong>{DateTime.fromJSDate(event, { zone: location.timezone }).toFormat('dd LLL · HH:mm:ss')}</strong></div>)}
+          {seasonRows.map(([label, event]) => { const date = seasonDate(event); return <div key={label}><span>{label}</span><button className={`data-target ${date === selectedDate ? 'selected' : ''}`} aria-pressed={date === selectedDate} aria-label={`Select ${label}, ${DateTime.fromISO(date).toFormat('dd LLL yyyy')}`} onClick={() => onDateChange(date)}>{DateTime.fromJSDate(event, { zone: location.timezone }).toFormat('dd LLL · HH:mm:ss')}</button></div> })}
         </div>
       </section>
 

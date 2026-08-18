@@ -18,6 +18,7 @@ function polyline(points: DaySample[]) {
 export function SunPath({ location, date, instant, onInspect }: SunPathProps) {
   const [visible, setVisible] = useState({ selected: true, summer: false, winter: false })
   const [hovered, setHovered] = useState<DaySample | null>(null)
+  const [dragPointer, setDragPointer] = useState<number | null>(null)
   const year = Number(date.slice(0, 4))
   const seasonalDates = useMemo(() => getSeasonalPathDates(location, year), [location, year])
   const paths = useMemo(() => ({
@@ -31,7 +32,7 @@ export function SunPath({ location, date, instant, onInspect }: SunPathProps) {
   const events = useMemo(() => getSunEvents(location, date), [location, date])
   const eventMarkers = [['Sunrise', events.sunrise], ['Solar noon', events.solarNoon], ['Sunset', events.sunset]] as const
 
-  const nearest = (event: PointerEvent<SVGPolylineElement>) => {
+  const nearest = (event: PointerEvent<SVGGraphicsElement>) => {
     const svg = event.currentTarget.ownerSVGElement
     if (!svg) return null
     const point = svg.createSVGPoint(); point.x = event.clientX; point.y = event.clientY
@@ -44,8 +45,25 @@ export function SunPath({ location, date, instant, onInspect }: SunPathProps) {
       return !best || distance < best.distance ? { sample, distance } : best
     }, null as { sample: DaySample; distance: number } | null)
   }
-  const move = (event: PointerEvent<SVGPolylineElement>) => setHovered(nearest(event)?.sample ?? null)
-  const select = (event: PointerEvent<SVGPolylineElement>) => { const item = nearest(event); if (item && item.distance < 28) onInspect(item.sample.timestamp) }
+  const move = (event: PointerEvent<SVGGraphicsElement>) => {
+    const item = nearest(event)
+    setHovered(item?.sample ?? null)
+    if (dragPointer === event.pointerId && item) onInspect(item.sample.timestamp)
+  }
+  const startDrag = (event: PointerEvent<SVGGraphicsElement>) => {
+    if (dragPointer !== null) return
+    const item = nearest(event)
+    if (!item || item.distance >= 28) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragPointer(event.pointerId)
+    setHovered(item.sample)
+    onInspect(item.sample.timestamp)
+  }
+  const endDrag = (event: PointerEvent<SVGGraphicsElement>) => {
+    if (dragPointer !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    setDragPointer(null)
+  }
   const keyboardSelect = (event: KeyboardEvent<SVGPolylineElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
@@ -66,9 +84,12 @@ export function SunPath({ location, date, instant, onInspect }: SunPathProps) {
         {(['N','NE','E','SE','S','SW','W','NW'] as const).map((label, index) => { const point = projectSkyPoint(0, index * 45, radius + 24, center, center); return <text key={label} className="compass-label" x={point.x} y={point.y + 4} textAnchor="middle">{label}</text> })}
         {visible.summer && <polyline className="sky-path reference" style={{ stroke: colors.summer }} points={pathLines.summer} />}
         {visible.winter && <polyline className="sky-path reference" style={{ stroke: colors.winter }} points={pathLines.winter} />}
-        {visible.selected && <polyline className="sky-path selected" points={pathLines.selected} tabIndex={0} role="button" aria-label="Selected date solar path; use arrow keys or click to inspect" onPointerMove={move} onPointerLeave={() => setHovered(null)} onClick={select} onKeyDown={keyboardSelect} />}
+        {visible.selected && <>
+          <polyline className="sky-path-hit" points={pathLines.selected} onPointerDown={startDrag} onPointerMove={move} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragPointer(null)} onPointerLeave={() => dragPointer === null && setHovered(null)} />
+          <polyline className="sky-path selected" points={pathLines.selected} tabIndex={0} role="button" aria-label="Selected date solar path; click, drag, or use arrow keys to inspect" onPointerDown={startDrag} onPointerMove={move} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragPointer(null)} onPointerLeave={() => dragPointer === null && setHovered(null)} onKeyDown={keyboardSelect} />
+        </>}
         {eventMarkers.map(([label, event]) => event && (() => { const p = getSunPosition(location, event); const xy = projectSkyPoint(Math.max(0, p.altitudeDeg), p.azimuthDeg, radius, center, center); return <g key={label}><circle className={`path-event ${label.toLowerCase().replace(' ', '-')}`} cx={xy.x} cy={xy.y} r="4"><title>{label} · {DateTime.fromJSDate(event, { zone: location.timezone }).toFormat('HH:mm:ss')}</title></circle></g> })())}
-        {position.altitudeDeg >= 0 ? <circle className="sun-path-marker" cx={marker.x} cy={marker.y} r="7" /> : <g className="below-marker"><circle cx={marker.x} cy={marker.y} r="8" /><path d={`M ${marker.x - 5} ${marker.y} L ${marker.x + 5} ${marker.y}`} /></g>}
+        {position.altitudeDeg >= 0 ? <circle className="sun-path-marker" cx={marker.x} cy={marker.y} r="9" onPointerDown={startDrag} onPointerMove={move} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => setDragPointer(null)} /> : <g className="below-marker"><circle cx={marker.x} cy={marker.y} r="8" /><path d={`M ${marker.x - 5} ${marker.y} L ${marker.x + 5} ${marker.y}`} /></g>}
         {tooltipPoint && hovered && <g className="path-tooltip" transform={`translate(${Math.min(size - 150, Math.max(8, tooltipPoint.x + 10))} ${Math.min(size - 55, Math.max(8, tooltipPoint.y - 50))})`}><rect width="142" height="45" rx="3"/><text x="7" y="17">{DateTime.fromJSDate(hovered.timestamp, { zone: location.timezone }).toFormat('HH:mm')}</text><text x="7" y="34">alt {hovered.altitudeDeg.toFixed(1)}° · az {hovered.azimuthDeg.toFixed(1)}°</text></g>}
       </svg>
       <div className="path-controls"><span className="section-kicker">Path overlays</span>{([
