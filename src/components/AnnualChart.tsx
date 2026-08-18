@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react'
+import { useChartViewWidth } from './useCompactChartLayout'
 
 export interface AnnualSeries {
   label: string
@@ -24,10 +25,6 @@ interface AnnualChartProps {
   highlightJumps?: boolean
 }
 
-const width = 1000
-const height = 300
-const padding = { top: 25, right: 30, bottom: 42, left: 70 }
-
 export function AnnualChart({
   title,
   dates,
@@ -40,6 +37,12 @@ export function AnnualChart({
   highlightJumps = false,
 }: AnnualChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const width = useChartViewWidth()
+  const restrained = width < 600
+  const height = Math.round(260 + ((width - 400) / 600) * 40)
+  const padding = restrained
+    ? { top: 24, right: 16, bottom: 40, left: 58 }
+    : { top: 25, right: 30, bottom: 42, left: 70 }
   const allValues = series.flatMap((item) => item.values).filter((value): value is number => value !== null)
   const rawMin = Math.min(...allValues)
   const rawMax = Math.max(...allValues)
@@ -55,7 +58,8 @@ export function AnnualChart({
   const plotHeight = height - padding.top - padding.bottom
   const x = (index: number) => padding.left + (index / Math.max(dates.length - 1, 1)) * plotWidth
   const y = (value: number) => padding.top + ((maximum - value) / (maximum - minimum)) * plotHeight
-  const ticks = Array.from({ length: 5 }, (_, index) => minimum + ((maximum - minimum) * index) / 4)
+  const tickCount = restrained ? 3 : 5
+  const ticks = Array.from({ length: tickCount }, (_, index) => minimum + ((maximum - minimum) * index) / (tickCount - 1))
   const activeIndex = hoveredIndex ?? selectedIndex
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect()
@@ -94,13 +98,13 @@ export function AnnualChart({
             <text className="axis-label" x={padding.left - 10} y={y(tick) + 4} textAnchor="end">{formatValue(tick)}</text>
           </g>
         ))}
-        {[0, 3, 6, 9].map((monthIndex) => {
+        {(restrained ? [0, 6] : [0, 3, 6, 9]).map((monthIndex) => {
           const prefix = `-${String(monthIndex + 1).padStart(2, '0')}-01`
           const index = dates.findIndex((date) => date.endsWith(prefix))
           return index >= 0 ? (
             <g key={prefix}>
               <line className="grid-line vertical" x1={x(index)} x2={x(index)} y1={padding.top} y2={height - padding.bottom} />
-              <text className="axis-label" x={x(index)} y={height - 16} textAnchor="middle">{['JAN', 'APR', 'JUL', 'OCT'][monthIndex / 3]}</text>
+              <text className="axis-label" x={x(index)} y={height - 14} textAnchor="middle">{['JAN', 'APR', 'JUL', 'OCT'][monthIndex / 3]}</text>
             </g>
           ) : null
         })}
