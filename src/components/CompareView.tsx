@@ -3,7 +3,7 @@ import { getCivilDayBounds, localClockSeconds } from '../astronomy/civilTime'
 import { formatClock, formatDegrees, formatDuration, formatSignedDegrees, formatSignedDuration } from '../astronomy/formatting'
 import type { CompareDayData, Location, SeasonEvents } from '../astronomy/types'
 
-const colors = ['#ffcf62', '#7ed9aa', '#91b9e8', '#ff8c74']
+const colors = ['var(--series-solar)', 'var(--series-summer)', 'var(--series-winter)', 'var(--series-coral)']
 const width = 1000
 const height = 390
 const padding = { top: 28, right: 24, bottom: 48, left: 58 }
