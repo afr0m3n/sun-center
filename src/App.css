@@ -1,5 +1,5 @@
 #root { min-height: 100vh; }
-.dashboard { width: min(1440px, 100%); margin: 0 auto; padding: 38px clamp(18px, 4vw, 64px) 28px; }
+.dashboard { --app-canvas-max: 1760px; --app-outer-gutter: clamp(18px, 4vw, 64px); width: min(var(--app-canvas-max), 100%); margin: 0 auto; padding: 38px var(--app-outer-gutter) 28px; }
 .masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 28px; border-bottom: 1px solid #2b3037; }
 .eyebrow, .section-kicker, .date-control span, .local-clock span, footer { color: #7f8995; font-family: 'DM Mono', monospace; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; }
 .sun-pulse { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #ffcf62; box-shadow: 0 0 18px #ffb33f; }
@@ -76,8 +76,8 @@ dt { color: #87919c; font-size: .76rem; } dd { margin: 0; font: 500 1rem 'DM Mon
 .chart-panel { margin-top: 14px; padding: clamp(20px, 3vw, 32px) clamp(10px, 2vw, 24px) 16px; }
 .chart-panel .panel-heading { padding: 0 8px; margin-bottom: 5px; }
 .date-caption, .tempo-unit { color: #7e8893; font: .72rem 'DM Mono', monospace; }
-.chart-scroll { overflow-x: auto; }
-.altitude-chart { display: block; min-width: 720px; width: 100%; }
+.chart-scroll { min-width: 0; }
+.altitude-chart { display: block; width: 100%; }
 .grid-line { stroke: #252c34; stroke-width: 1; } .grid-line.vertical { stroke-dasharray: 2 7; }
 .horizon-line { stroke: #5a626d; stroke-width: 1.5; }
 .axis-label, .marker-label, .now-label { font: 11px 'DM Mono', monospace; fill: #697480; }
@@ -132,9 +132,9 @@ footer { padding-top: 26px; text-align: center; font-size: .62rem; }
 .season-grid { grid-template-columns: 1fr 1fr; }
 .annual-panel { margin-top: 14px; padding: clamp(18px, 2vw, 28px) clamp(8px, 1.5vw, 20px) 12px; min-width: 0; }
 .annual-panel .panel-heading { padding: 0 8px; margin-bottom: 2px; }
-.annual-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.annual-chart-wrap { overflow-x: auto; position: relative; }
-.annual-chart { display: block; width: 100%; min-width: 650px; touch-action: pan-y; }
+.annual-pair { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.annual-chart-wrap { min-width: 0; position: relative; }
+.annual-chart { display: block; width: 100%; touch-action: pan-y; }
 .annual-chart:focus-visible { outline: 2px solid #ffcf62; outline-offset: -3px; }
 .annual-line { fill: none; stroke-width: 2.25; vector-effect: non-scaling-stroke; }
 .annual-zero-line { stroke: #727c87; stroke-width: 1.4; }
@@ -156,7 +156,7 @@ footer { padding-top: 26px; text-align: center; font-size: .62rem; }
 .year-explorer input[type='range']:focus-visible, .dock-slider input[type='range']:focus-visible { outline: 2px solid #ffcf62; outline-offset: 3px; border-radius: 3px; }
 .year-explorer-context { color: #89939e; font: .68rem 'DM Mono', monospace; }
 .inspect-day-action { min-height: 42px; padding: 8px 14px; color: #17130a; background: #ffcf62; border: 1px solid #ffcf62; border-radius: 3px; font: 700 .66rem 'DM Mono', monospace; letter-spacing: .05em; cursor: pointer; }
-.compare-controls { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 10px; padding: 20px 0 6px; }
+.compare-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 20px 0 6px; }
 .compare-date { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 13px; background: #10151b; border: 1px solid; border-radius: 4px; }
 .compare-date span { grid-column: 1 / -1; color: #89939e; font: .68rem 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
 .compare-date input, .compare-date select { min-width: 0; color-scheme: dark; color: #e9edf2; background: #0b0f14; border: 1px solid #343b45; border-radius: 3px; padding: 8px; font: .7rem 'DM Mono', monospace; }
@@ -166,13 +166,13 @@ footer { padding-top: 26px; text-align: center; font-size: .62rem; }
 .compare-date .inspect-compare { color: #ffda7a; border-color: #66552c; }
 .add-date { min-height: 96px; }
 .compare-panel { margin-top: 8px; }
-.compare-chart { display: block; width: 100%; min-width: 720px; }
+.compare-chart { display: block; width: 100%; }
 .compare-line { fill: none; stroke-width: 2.2; vector-effect: non-scaling-stroke; opacity: .92; }
 .comparison-table { margin-top: 14px; padding: clamp(20px, 3vw, 32px); }
 .comparison-table .series-dot { margin-right: 8px; }
-@media (max-width: 1100px) { .seasonal-readout { grid-template-columns: repeat(7, 160px); } .today-seasonal { grid-template-columns: repeat(6, 170px); } .annual-pair { grid-template-columns: 1fr; } .compare-controls { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 1100px) { .seasonal-readout { grid-template-columns: repeat(7, 160px); } .today-seasonal { grid-template-columns: repeat(6, 170px); } }
 @media (max-width: 900px) { .annual-summary { grid-template-columns: 1fr; } }
-@media (max-width: 620px) { .mode-nav button { flex: 1; padding-inline: 8px; } .year-hero { align-items: start; flex-direction: column; } .year-tempo-copy { text-align: left; } .season-grid { grid-template-columns: 1fr; } .compare-controls { grid-template-columns: 1fr; } .compare-date { grid-template-columns: 1fr; } .compare-date input, .compare-date select { grid-column: auto; width: 100%; } .add-date { min-height: 48px; } .milestone-live { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 620px) { .mode-nav button { flex: 1; padding-inline: 8px; } .year-hero { align-items: start; flex-direction: column; } .year-tempo-copy { text-align: left; } .season-grid { grid-template-columns: 1fr; } .milestone-live { align-items: flex-start; flex-direction: column; } }
 
 
 /* Phase 2B · synchronized time and sky exploration */
@@ -201,7 +201,7 @@ footer { padding-top: 26px; text-align: center; font-size: .62rem; }
 .time-step-controls button:hover, .time-step-controls button:focus-visible { color: #fff; border-color: #69737e; }
 .time-step-controls .now-control { color: #17130a; background: #ffcf62; border-color: #ffcf62; font-weight: 700; letter-spacing: .1em; }
 .inspection-datetime { display: block; margin-top: 7px; }
-.explorer-dock { position: fixed; z-index: 15; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; display: grid; grid-template-columns: minmax(190px, auto) minmax(240px, 1fr) auto; align-items: center; gap: 18px; width: min(1360px, calc(100vw - 24px)); min-height: 68px; padding: 10px 14px; transform: translateX(-50%); color: #dce1e6; background: linear-gradient(100deg, rgba(13,18,24,.98), rgba(25,23,16,.98)); border: 1px solid #51462d; border-top-color: #79683b; border-radius: 4px; box-shadow: 0 14px 42px rgba(0,0,0,.55); animation: dock-in .16s ease-out; }
+.explorer-dock { position: fixed; z-index: 15; top: calc(8px + env(safe-area-inset-top, 0px)); left: 50%; display: grid; grid-template-columns: minmax(190px, auto) minmax(240px, 1fr) auto; align-items: center; gap: 18px; width: min(calc(var(--app-canvas-max) - var(--app-outer-gutter) - var(--app-outer-gutter)), calc(100vw - var(--app-outer-gutter) - var(--app-outer-gutter))); min-height: 68px; padding: 10px 14px; transform: translateX(-50%); color: #dce1e6; background: linear-gradient(100deg, rgba(13,18,24,.98), rgba(25,23,16,.98)); border: 1px solid #51462d; border-top-color: #79683b; border-radius: 4px; box-shadow: 0 14px 42px rgba(0,0,0,.55); animation: dock-in .16s ease-out; }
 @keyframes dock-in { from { opacity: 0; transform: translate(-50%, -8px); } }
 .dock-readout { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 3px 10px; min-width: 0; }
 .dock-readout strong { color: #fff0b0; font: 500 1rem 'DM Mono', monospace; white-space: nowrap; }
@@ -217,7 +217,7 @@ footer { padding-top: 26px; text-align: center; font-size: .62rem; }
 .sun-path-panel { margin-top: 14px; padding: clamp(20px, 3vw, 32px); }
 .sun-path-panel .panel-heading { margin-bottom: 4px; }
 .path-layout { display: grid; grid-template-columns: minmax(340px, 1.4fr) minmax(220px, .6fr); align-items: center; gap: clamp(16px, 4vw, 48px); }
-.sun-path { display: block; width: min(100%, 620px); margin: 0 auto; overflow: visible; }
+.sun-path { display: block; width: min(100%, 500px); margin: 0 auto; overflow: visible; }
 .sky-ring { fill: none; stroke: #303944; stroke-width: 1; }
 .sky-ring:first-of-type { stroke: #6f7b87; stroke-width: 1.6; }
 .sky-ring-label { fill: #697580; font: 10px 'DM Mono', monospace; }
@@ -354,7 +354,22 @@ footer { font-size: .62rem; }
 .path-controls p { color: var(--text-muted); }
 
 :where(button, input, select, [role='button']):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+@media (min-width: 1600px) {
+  .wide-observatory { display: grid; grid-template-columns: minmax(0, 44fr) minmax(0, 56fr); align-items: start; gap: 14px; }
+  .observatory-telemetry, .wide-observatory > .sun-path-panel, .current-grid > *, .annual-pair > *, .compare-controls > * { min-width: 0; }
+  .observatory-telemetry .current-grid { grid-template-columns: 1fr; }
+  .observatory-telemetry .statistics dl { grid-template-columns: 1fr 1fr; column-gap: 24px; }
+  .observatory-telemetry .today-seasonal { grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+  .wide-observatory > .sun-path-panel { margin-top: 0; }
+  .wide-observatory .path-layout { grid-template-columns: minmax(500px, 1fr) minmax(180px, .32fr); gap: clamp(18px, 1.5vw, 30px); }
+  .wide-observatory .sun-path { width: min(100%, 620px); }
+  .annual-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .compare-controls { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}
 @media (max-width: 760px) {
+  .compare-controls, .compare-date { grid-template-columns: 1fr; }
+  .compare-date input, .compare-date select { grid-column: auto; width: 100%; }
+  .add-date { min-height: 48px; }
   .time-step-controls { grid-template-columns: 1fr 1fr; }
   .time-step-controls .now-control { grid-column: 1 / -1; grid-row: 1; }
   .timeline-event em { display: none; }

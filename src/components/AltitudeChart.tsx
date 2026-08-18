@@ -2,13 +2,16 @@ import { DateTime } from 'luxon'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { getSunPosition } from '../astronomy/sunPosition'
 import type { DaySample, Location, SunEvents } from '../astronomy/types'
+import { useChartViewWidth } from './useCompactChartLayout'
 
 interface AltitudeChartProps { location: Location; date: string; samples: DaySample[]; events: SunEvents; instant: Date; onInspect: (instant: Date) => void }
-const width = 1000
-const height = 360
-const padding = { top: 28, right: 24, bottom: 48, left: 56 }
-
 export function AltitudeChart({ location, date, samples, events, instant, onInspect }: AltitudeChartProps) {
+  const width = useChartViewWidth()
+  const restrained = width < 600
+  const height = Math.round(250 + ((width - 400) / 600) * 110)
+  const padding = restrained
+    ? { top: 24, right: 16, bottom: 42, left: 50 }
+    : { top: 28, right: 24, bottom: 48, left: 56 }
   const dayStart = DateTime.fromISO(date, { zone: location.timezone }).startOf('day')
   const dayEnd = dayStart.plus({ days: 1 })
   const minAltitude = Math.min(-24, Math.floor(Math.min(...samples.map((sample) => sample.altitudeDeg)) / 10) * 10)
@@ -38,7 +41,7 @@ export function AltitudeChart({ location, date, samples, events, instant, onInsp
   return <div className="chart-scroll" aria-label={`Solar altitude chart for ${date}`}><svg className="altitude-chart" viewBox={`0 0 ${width} ${height}`} role="button" aria-label="Solar altitude graph; click or use left and right arrows to inspect" tabIndex={0} onPointerDown={inspectFromPointer} onKeyDown={inspectFromKeyboard}>
     <title>Solar altitude throughout the selected local day; click to inspect</title><defs><linearGradient id="sun-line" x1="0" x2="1"><stop offset="0" stopColor="var(--series-sunset)"/><stop offset="0.5" stopColor="var(--series-maximum)"/><stop offset="1" stopColor="var(--series-sunset)"/></linearGradient></defs>
     {[minAltitude, 0, 30, 60].filter((tick) => tick <= maxAltitude && tick >= minAltitude).map((tick) => <g key={tick}><line className={tick === 0 ? 'horizon-line' : 'grid-line'} x1={padding.left} x2={width - padding.right} y1={y(tick)} y2={y(tick)}/><text className="axis-label" x={padding.left - 12} y={y(tick) + 4} textAnchor="end">{tick}°</text></g>)}
-    {[0, .25, .5, .75, 1].map((fraction) => { const time = DateTime.fromMillis(dayStart.toMillis() + fraction * (dayEnd.toMillis() - dayStart.toMillis()), { zone: location.timezone }); return <g key={fraction}><line className="grid-line vertical" x1={x(time.toJSDate())} x2={x(time.toJSDate())} y1={padding.top} y2={height - padding.bottom}/><text className="axis-label" x={x(time.toJSDate())} y={height - 18} textAnchor="middle">{fraction === 1 ? '24:00' : time.toFormat('HH:mm')}</text></g> })}
+    {(restrained ? [0, .5, 1] : [0, .25, .5, .75, 1]).map((fraction) => { const time = DateTime.fromMillis(dayStart.toMillis() + fraction * (dayEnd.toMillis() - dayStart.toMillis()), { zone: location.timezone }); return <g key={fraction}><line className="grid-line vertical" x1={x(time.toJSDate())} x2={x(time.toJSDate())} y1={padding.top} y2={height - padding.bottom}/><text className="axis-label" x={x(time.toJSDate())} y={height - 15} textAnchor="middle">{fraction === 1 ? '24:00' : time.toFormat('HH:mm')}</text></g> })}
     <polyline className="altitude-line-glow" points={points}/><polyline className="altitude-line" points={points}/>
     {markers.map(({ label, time, color }) => time && <g key={label}><line className="event-marker" style={{ stroke: color }} x1={x(time)} x2={x(time)} y1={padding.top} y2={height - padding.bottom}/><text className="marker-label" style={{ fill: color }} x={x(time) + 6} y={padding.top + 12}>{label}</text></g>)}
     <g pointerEvents="none"><line className="now-marker" x1={x(instant)} x2={x(instant)} y1={padding.top} y2={height - padding.bottom}/><circle className="now-dot" cx={x(instant)} cy={y(inspectedPosition.altitudeDeg)} r="5"/><text className="now-label" x={x(instant) + 6} y={height - padding.bottom - 8}>Selected</text></g>

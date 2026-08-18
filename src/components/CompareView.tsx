@@ -2,12 +2,9 @@ import { DateTime } from 'luxon'
 import { getCivilDayBounds, localClockSeconds } from '../astronomy/civilTime'
 import { formatClock, formatDegrees, formatDuration, formatSignedDegrees, formatSignedDuration } from '../astronomy/formatting'
 import type { CompareDayData, Location, SeasonEvents } from '../astronomy/types'
+import { useChartViewWidth } from './useCompactChartLayout'
 
 const colors = ['var(--series-solar)', 'var(--series-summer)', 'var(--series-winter)', 'var(--series-coral)']
-const width = 1000
-const height = 390
-const padding = { top: 28, right: 24, bottom: 48, left: 58 }
-
 interface CompareViewProps {
   location: Location
   dates: string[]
@@ -19,6 +16,12 @@ interface CompareViewProps {
 }
 
 function CompareChart({ location, data }: { location: Location; data: CompareDayData[] }) {
+  const width = useChartViewWidth()
+  const restrained = width < 600
+  const height = Math.round(260 + ((width - 400) / 600) * 130)
+  const padding = restrained
+    ? { top: 24, right: 16, bottom: 42, left: 50 }
+    : { top: 28, right: 24, bottom: 48, left: 58 }
   const values = data.flatMap((day) => day.profile.map((sample) => sample.altitudeDeg))
   const minimum = Math.floor(Math.min(-20, ...values) / 10) * 10
   const maximum = Math.ceil(Math.max(30, ...values) / 10) * 10
@@ -28,7 +31,7 @@ function CompareChart({ location, data }: { location: Location; data: CompareDay
   return <div className="chart-scroll"><svg className="compare-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Compared solar altitude profiles">
     <title>Solar altitude through each actual local civil day</title>
     {[minimum, 0, 30, 60].filter((tick) => tick >= minimum && tick <= maximum).map((tick) => <g key={tick}><line className={tick === 0 ? 'horizon-line' : 'grid-line'} x1={padding.left} x2={width - padding.right} y1={y(tick)} y2={y(tick)} /><text className="axis-label" x={padding.left - 10} y={y(tick) + 4} textAnchor="end">{tick}°</text></g>)}
-    {[0, .25, .5, .75, 1].map((fraction) => <g key={fraction}><line className="grid-line vertical" x1={x(fraction)} x2={x(fraction)} y1={padding.top} y2={height - padding.bottom} /><text className="axis-label" x={x(fraction)} y={height - 18} textAnchor="middle">{Math.round(fraction * 100)}%</text></g>)}
+    {(restrained ? [0, .5, 1] : [0, .25, .5, .75, 1]).map((fraction) => <g key={fraction}><line className="grid-line vertical" x1={x(fraction)} x2={x(fraction)} y1={padding.top} y2={height - padding.bottom} /><text className="axis-label" x={x(fraction)} y={height - 15} textAnchor="middle">{Math.round(fraction * 100)}%</text></g>)}
     {data.map((day, index) => {
       const bounds = getCivilDayBounds(location, day.date)
       const duration = bounds.end.toMillis() - bounds.start.toMillis()
