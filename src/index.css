@@ -1,15 +1,125 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
+  color-scheme: dark;
   font-family: 'Manrope', system-ui, sans-serif;
-  color: #e9edf2;
-  background: #080b0f;
+  color: var(--text-primary);
+  background: var(--bg-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+
+  --bg-canvas: #080b0f;
+  --bg-canvas-glow: #352713;
+  --bg-panel: #0c1015;
+  --bg-panel-raised: #14191f;
+  --bg-control: #11171e;
+  --bg-control-deep: #090d12;
+  --bg-tooltip: rgba(7, 10, 14, .94);
+  --bg-overlay: rgba(3, 5, 8, .78);
+  --bg-selection: #18160f;
+  --bg-solar-soft: #2a2418;
+  --bg-live-soft: #13241d;
+  --bg-below-soft: #18202a;
+  --text-primary: #e9edf2;
+  --text-secondary: #aeb6c0;
+  --text-muted: #7f8995;
+  --text-technical: #89939e;
+  --text-subdued: #687480;
+  --text-on-solar: #17130a;
+  --text-on-danger: #ffd8d0;
+  --border-default: #2b3139;
+  --border-strong: #3b444f;
+  --border-control: #343b45;
+  --border-accent: #66552c;
+  --solar-primary: #ffcf62;
+  --solar-secondary: #ffda7a;
+  --solar-emphasis: #fff0b0;
+  --solar-soft: #ffb84d;
+  --positive: #7ed9aa;
+  --negative: #ff8c74;
+  --warning: #ff9b87;
+  --danger-bg: #57271f;
+  --danger-border: #874337;
+  --graph-grid-major: #303944;
+  --graph-grid-minor: #252c34;
+  --graph-axis: #697480;
+  --graph-horizon: #5a626d;
+  --graph-label: #b6c0ca;
+  --selection: #f5f7f9;
+  --focus-ring: #ffcf62;
+  --tooltip-text: #e2e7ec;
+  --tooltip-border: #46515d;
+  --series-solar: #ffcf62;
+  --series-summer: #7ed9aa;
+  --series-winter: #91b9e8;
+  --series-coral: #ff8c74;
+  --series-sunrise: #ffb45e;
+  --series-noon: #fff0a5;
+  --series-sunset: #ff7b54;
+  --series-maximum: #ffe27a;
+  --shadow-panel: 0 18px 50px rgba(0, 0, 0, .18);
+  --shadow-overlay: 0 20px 60px rgba(0, 0, 0, .55);
+  --shadow-dock: 0 14px 42px rgba(0, 0, 0, .55);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-canvas: #f4f2ed;
+  --bg-canvas-glow: #ede0c9;
+  --bg-panel: #faf9f5;
+  --bg-panel-raised: #fffefa;
+  --bg-control: #fcfaf5;
+  --bg-control-deep: #f2efe8;
+  --bg-tooltip: rgba(35, 38, 41, .96);
+  --bg-overlay: rgba(37, 33, 27, .48);
+  --bg-selection: #fff3d2;
+  --bg-solar-soft: #fff0c6;
+  --bg-live-soft: #e8f5ed;
+  --bg-below-soft: #e8eef3;
+  --text-primary: #20262c;
+  --text-secondary: #46515a;
+  --text-muted: #56616a;
+  --text-technical: #4f5b64;
+  --text-subdued: #68727b;
+  --text-on-solar: #fffefa;
+  --text-on-danger: #fff7f4;
+  --border-default: #c8c2b8;
+  --border-strong: #a39b90;
+  --border-control: #b4ada3;
+  --border-accent: #9d711f;
+  --solar-primary: #ad5800;
+  --solar-secondary: #955000;
+  --solar-emphasis: #784600;
+  --solar-soft: #cf6900;
+  --positive: #187448;
+  --negative: #b63e2f;
+  --warning: #a83224;
+  --danger-bg: #a83224;
+  --danger-border: #7d241a;
+  --graph-grid-major: #b9b0a3;
+  --graph-grid-minor: #ddd5c9;
+  --graph-axis: #606b74;
+  --graph-horizon: #7f776d;
+  --graph-label: #38434c;
+  --selection: #27313a;
+  --focus-ring: #8b5c00;
+  --tooltip-text: #f8f4ec;
+  --tooltip-border: #5f666b;
+  --series-solar: #a96300;
+  --series-summer: #167348;
+  --series-winter: #286aa5;
+  --series-coral: #b63e2f;
+  --series-sunrise: #ad5700;
+  --series-noon: #806000;
+  --series-sunset: #bb3f29;
+  --series-maximum: #9a6700;
+  --shadow-panel: 0 14px 34px rgba(57, 46, 29, .09);
+  --shadow-overlay: 0 20px 55px rgba(57, 46, 29, .22);
+  --shadow-dock: 0 12px 34px rgba(57, 46, 29, .2);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 75% -10%, #352713 0, transparent 30rem), #080b0f; }
-button, input { font: inherit; }
-::selection { color: #080b0f; background: #ffd36a; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 75% -10%, var(--bg-canvas-glow) 0, transparent 30rem), var(--bg-canvas); }
+button, input, select { font: inherit; }
+::selection { color: var(--text-on-solar); background: var(--solar-primary); }

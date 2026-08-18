@@ -21,6 +21,7 @@ import { useStickyExplorer } from './components/useStickyExplorer'
 import { YearView } from './components/YearView'
 import { LocationSelector } from './locations/LocationSelector'
 import { useLocations } from './locations/useLocations'
+import { ThemeControl } from './theme/ThemeControl'
 import './App.css'
 
 const altitudeMilestones = [40, 30, 20, 15, 10, 5, 0]
@@ -111,7 +112,7 @@ function App() {
   const changeHeaderDate = (date: string) => view === 'year' ? setYearSelectedDate(date) : selectTodayDate(date)
 
   return <main className="dashboard">
-    <header className="masthead"><div><div className="eyebrow"><span className="sun-pulse"/> Solar position observatory</div><h1>SUN CENTER</h1></div><label className="date-control"><span>{view === 'year' ? 'Year selected date' : 'Observation date'}</span><input type="date" value={headerDate} onChange={(event) => event.target.value && changeHeaderDate(event.target.value)}/></label></header>
+    <header className="masthead"><div><div className="eyebrow"><span className="sun-pulse"/> Solar position observatory</div><h1>SUN CENTER</h1></div><div className="masthead-controls"><ThemeControl/><label className="date-control"><span>{view === 'year' ? 'Year selected date' : 'Observation date'}</span><input type="date" value={headerDate} onChange={(event) => event.target.value && changeHeaderDate(event.target.value)}/></label></div></header>
     <nav className="mode-nav" aria-label="Sun Center views">{(['today', 'year', 'compare'] as const).map((mode) => <button key={mode} className={view === mode ? 'active' : ''} aria-pressed={view === mode} onClick={() => setView(mode)}>{mode}</button>)}</nav>
     <section className="location-bar"><div className="station-details"><span className="section-kicker">Active station</span><LocationSelector/><span>{Math.abs(location.latitude).toFixed(4)}° {location.latitude >= 0 ? 'N' : 'S'}, {Math.abs(location.longitude).toFixed(4)}° {location.longitude >= 0 ? 'E' : 'W'} · {location.elevationMeters === null ? 'elevation —' : `${location.elevationMeters} m`}</span></div><div className="local-clock"><span>{location.timezone}</span><strong>{localNow.toFormat('HH:mm:ss')}</strong><span>{localNow.toFormat('cccc, dd LLL yyyy · ZZZZ')}</span></div></section>
 

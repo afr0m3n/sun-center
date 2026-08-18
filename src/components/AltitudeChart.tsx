@@ -19,7 +19,7 @@ export function AltitudeChart({ location, date, samples, events, instant, onInsp
   const y = (altitude: number) => padding.top + ((maxAltitude - altitude) / (maxAltitude - minAltitude)) * plotHeight
   const points = samples.map((sample) => `${x(sample.timestamp)},${y(sample.altitudeDeg)}`).join(' ')
   const inspectedPosition = getSunPosition(location, instant)
-  const markers = [{ label: 'Sunrise', time: events.sunrise, color: '#ffb45e' }, { label: 'Solar noon', time: events.solarNoon, color: '#fff0a5' }, { label: 'Sunset', time: events.sunset, color: '#ff7b54' }]
+  const markers = [{ label: 'Sunrise', time: events.sunrise, color: 'var(--series-sunrise)' }, { label: 'Solar noon', time: events.solarNoon, color: 'var(--series-noon)' }, { label: 'Sunset', time: events.sunset, color: 'var(--series-sunset)' }]
   const inspectFromPointer = (event: PointerEvent<SVGSVGElement>) => {
     const point = event.currentTarget.createSVGPoint(); point.x = event.clientX; point.y = event.clientY
     const matrix = event.currentTarget.getScreenCTM()?.inverse(); if (!matrix) return
@@ -36,7 +36,7 @@ export function AltitudeChart({ location, date, samples, events, instant, onInsp
     onInspect(new Date(Math.min(endMs, Math.max(startMs, target))))
   }
   return <div className="chart-scroll" aria-label={`Solar altitude chart for ${date}`}><svg className="altitude-chart" viewBox={`0 0 ${width} ${height}`} role="button" aria-label="Solar altitude graph; click or use left and right arrows to inspect" tabIndex={0} onPointerDown={inspectFromPointer} onKeyDown={inspectFromKeyboard}>
-    <title>Solar altitude throughout the selected local day; click to inspect</title><defs><linearGradient id="sun-line" x1="0" x2="1"><stop offset="0" stopColor="#ff7b54"/><stop offset="0.5" stopColor="#ffe27a"/><stop offset="1" stopColor="#ff7b54"/></linearGradient></defs>
+    <title>Solar altitude throughout the selected local day; click to inspect</title><defs><linearGradient id="sun-line" x1="0" x2="1"><stop offset="0" stopColor="var(--series-sunset)"/><stop offset="0.5" stopColor="var(--series-maximum)"/><stop offset="1" stopColor="var(--series-sunset)"/></linearGradient></defs>
     {[minAltitude, 0, 30, 60].filter((tick) => tick <= maxAltitude && tick >= minAltitude).map((tick) => <g key={tick}><line className={tick === 0 ? 'horizon-line' : 'grid-line'} x1={padding.left} x2={width - padding.right} y1={y(tick)} y2={y(tick)}/><text className="axis-label" x={padding.left - 12} y={y(tick) + 4} textAnchor="end">{tick}°</text></g>)}
     {[0, .25, .5, .75, 1].map((fraction) => { const time = DateTime.fromMillis(dayStart.toMillis() + fraction * (dayEnd.toMillis() - dayStart.toMillis()), { zone: location.timezone }); return <g key={fraction}><line className="grid-line vertical" x1={x(time.toJSDate())} x2={x(time.toJSDate())} y1={padding.top} y2={height - padding.bottom}/><text className="axis-label" x={x(time.toJSDate())} y={height - 18} textAnchor="middle">{fraction === 1 ? '24:00' : time.toFormat('HH:mm')}</text></g> })}
     <polyline className="altitude-line-glow" points={points}/><polyline className="altitude-line" points={points}/>

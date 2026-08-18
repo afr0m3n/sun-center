@@ -9,7 +9,7 @@ interface SunPathProps { location: Location; date: string; instant: Date; onInsp
 const size = 460
 const center = size / 2
 const radius = 190
-const colors = { selected: '#ffcf62', summer: '#7ed9aa', winter: '#91b9e8' }
+const colors = { selected: 'var(--series-solar)', summer: 'var(--series-summer)', winter: 'var(--series-winter)' }
 
 function polyline(points: DaySample[]) {
   return points.map((point) => { const projected = projectSkyPoint(point.altitudeDeg, point.azimuthDeg, radius, center, center); return `${projected.x},${projected.y}` }).join(' ')

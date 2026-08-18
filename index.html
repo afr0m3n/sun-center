@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,6 +7,22 @@
     <meta name="theme-color" content="#080b0f" />
     <meta name="description" content="Sun Center solar position and movement dashboard for Ústí nad Labem." />
     <title>Sun Center · Solar Observatory</title>
+    <style>html { background: #080b0f; } html[data-theme='light'] { background: #f4f2ed; }</style>
+    <script>
+      (() => {
+        const key = 'sun-center.theme-preference'
+        let preference = 'system'
+        try {
+          const stored = JSON.parse(localStorage.getItem(key) || 'null')
+          if (stored?.version === 1 && ['system', 'dark', 'light'].includes(stored.preference)) preference = stored.preference
+        } catch { /* System is the safe fallback. */ }
+        const theme = preference === 'system'
+          ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : preference
+        document.documentElement.dataset.theme = theme
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#080b0f' : '#f4f2ed'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

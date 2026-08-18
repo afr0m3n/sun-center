@@ -26,10 +26,10 @@ export function YearView({ location, selectedDate, onDateChange, onInspectDay, d
     color,
   })
   const markers = [
-    markerFor(data.seasons.springEquinox, 'VE', '#7ed9aa'),
-    markerFor(data.seasons.summerSolstice, 'SS', '#ffda7a'),
-    markerFor(data.seasons.autumnEquinox, 'AE', '#ff9b6a'),
-    markerFor(data.seasons.winterSolstice, 'WS', '#91b9e8'),
+    markerFor(data.seasons.springEquinox, 'VE', 'var(--series-summer)'),
+    markerFor(data.seasons.summerSolstice, 'SS', 'var(--solar-secondary)'),
+    markerFor(data.seasons.autumnEquinox, 'AE', 'var(--series-coral)'),
+    markerFor(data.seasons.winterSolstice, 'WS', 'var(--series-winter)'),
   ]
   const seasonRows: Array<[string, Date]> = [
     ['Spring equinox', data.seasons.springEquinox],
@@ -91,25 +91,25 @@ export function YearView({ location, selectedDate, onDateChange, onInspectDay, d
 
       <section className="panel annual-panel">
         <div className="panel-heading"><div><span className="section-kicker">Photoperiod</span><h2>Daylight duration</h2></div><span className="date-caption">{selectedDate}</span></div>
-        <AnnualChart title="Yearly daylight duration" dates={dates} series={[{ label: 'Daylight', color: '#ffcf62', values: data.days.map((day) => day.dayLengthSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => formatDuration(value)} />
+        <AnnualChart title="Yearly daylight duration" dates={dates} series={[{ label: 'Daylight', color: 'var(--series-solar)', values: data.days.map((day) => day.dayLengthSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => formatDuration(value)} />
       </section>
 
       <section className="panel annual-panel">
         <div className="panel-heading"><div><span className="section-kicker">Wall-clock events</span><h2>Sunrise / sunset</h2></div><span className="chart-note">DST steps are shown, not smoothed</span></div>
         <AnnualChart title="Local clock sunrise and sunset with DST discontinuities" dates={dates} series={[
-          { label: 'Sunrise', color: '#ffb45e', values: data.days.map((day) => day.sunrise ? localClockSeconds(day.sunrise, location.timezone) : null) },
-          { label: 'Sunset', color: '#ff7b54', values: data.days.map((day) => day.sunset ? localClockSeconds(day.sunset, location.timezone) : null) },
+          { label: 'Sunrise', color: 'var(--series-sunrise)', values: data.days.map((day) => day.sunrise ? localClockSeconds(day.sunrise, location.timezone) : null) },
+          { label: 'Sunset', color: 'var(--series-sunset)', values: data.days.map((day) => day.sunset ? localClockSeconds(day.sunset, location.timezone) : null) },
         ]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} highlightJumps formatValue={(value) => DateTime.fromObject({ hour: Math.floor(value / 3600), minute: Math.floor((value % 3600) / 60) }).toFormat('HH:mm')} />
       </section>
 
       <div className="annual-pair">
         <section className="panel annual-panel">
           <div className="panel-heading"><div><span className="section-kicker">Culmination</span><h2>Maximum solar altitude</h2></div><span className="date-caption">{formatDegrees(selected.maximumSolarAltitudeDeg)}</span></div>
-          <AnnualChart title="Maximum solar altitude by date" dates={dates} series={[{ label: 'Maximum', color: '#ffe27a', values: data.days.map((day) => day.maximumSolarAltitudeDeg) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${value.toFixed(1)}°`} />
+          <AnnualChart title="Maximum solar altitude by date" dates={dates} series={[{ label: 'Maximum', color: 'var(--series-maximum)', values: data.days.map((day) => day.maximumSolarAltitudeDeg) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${value.toFixed(1)}°`} />
         </section>
         <section className="panel annual-panel">
           <div className="panel-heading"><div><span className="section-kicker">Seasonal acceleration</span><h2>Daylight tempo</h2></div><span className="date-caption">{formatSignedRate(selected.dayLengthChangeSeconds)}</span></div>
-          <AnnualChart title="Daily daylight-duration change" dates={dates} series={[{ label: 'Δ daylight', color: '#7ed9aa', values: data.days.map((day) => day.dayLengthChangeSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${Math.round(value)}s`} zeroLine />
+          <AnnualChart title="Daily daylight-duration change" dates={dates} series={[{ label: 'Δ daylight', color: 'var(--series-summer)', values: data.days.map((day) => day.dayLengthChangeSeconds) }]} markers={markers} selectedIndex={selectedIndex} onSelectedIndexChange={selectIndex} formatValue={(value) => `${Math.round(value)}s`} zeroLine />
         </section>
       </div>
       <p className="method-note">Sunrise and sunset tooltip values are local wall-clock times in {location.timezone}. Their dashed jumps expose offset changes; tempo metrics use the absolute solar shift and therefore do not turn a DST change into a one-hour astronomical movement. Selected sunrise: {formatClock(selected.sunrise, location.timezone)}.</p>
